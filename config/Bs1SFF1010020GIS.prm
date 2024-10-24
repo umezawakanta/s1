@@ -1,0 +1,33 @@
+# JP1ジョブの設定
+JP1_HOSTNAME=myhost
+JP1_JOBNAME=MyJob
+
+# スクリプトのパス
+STARTER_SCRIPT=sbin/starter.sh
+EXECUTOR_SCRIPT=sbin/file_processor.sh
+
+# ログファイルのパス
+JP1_LOG_FILE=log/jp1_job_log.txt
+STARTER_LOG_FILE=log/starter_log.txt
+
+# その他の設定
+TIMEOUT=3600
+MAX_RETRIES=3
+
+GYOMU_ROOT=.
+
+# File paths
+TRANSFER_RESULT_FILE=result/B003KyouyoTensoinfo.dat
+TRANSFER_INFO_FILE=inf/B003KyouyoTensoinfo.dat
+
+# Backup directory
+BACKUP_DIR=back
+
+# Log file
+LOG_FILE=log/process.log
+
+# シェープファイル格納ルートディレクトリ
+SHAPE_FILES_ROOT=shape
+
+# 圧縮ファイル名のフォーマット
+COMPRESSED_FILE_FORMAT="B003KY_%Y%m%d%H%M%S.tar.gz"

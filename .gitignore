@@ -1,0 +1,20 @@
+# Ignore log files
+*.log
+
+# Ignore compressed files
+*.tar.gz
+
+# Ignore specific directories
+/back/
+/comp_work/
+/FT/
+
+# Ignore data files
+*.dat
+
+# Ignore shape files
+*.dbf
+*.fix
+*.prj
+*.shp
+*.shx
