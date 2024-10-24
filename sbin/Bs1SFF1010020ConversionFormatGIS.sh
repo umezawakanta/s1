@@ -28,6 +28,14 @@ check_dir_exists() {
     fi
 }
 
+# ディレクトリを作成する関数
+create_dir_if_not_exists() {
+    if [ ! -d "$1" ]; then
+        mkdir -p "$1"
+        log_message "ディレクトリを作成しました: $1"
+    fi
+}
+
 # エラーを処理する関数
 handle_error() {
     log_message "エラーが発生しました: $1"
@@ -36,8 +44,11 @@ handle_error() {
 
 # 転送結果ファイルの存在確認
 check_transfer_result() {
-    check_file_exists "$TRANSFER_RESULT_FILE"
-    log_message "転送結果ファイルのチェックが完了しました"
+    if [ -f "$TRANSFER_RESULT_FILE" ]; then
+        log_message "転送結果ファイルのチェックが完了しました"
+    else
+        log_message "警告: 転送結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
+    fi
 }
 
 # シェープファイル複写
@@ -56,7 +67,7 @@ copy_shape_files() {
             log_message "店舗 ${store} のシェープファイルを複写します"
             
             # ディレクトリ構造を作成
-            mkdir -p "${target_dir}/大メッシュ/中メッシュ/小メッシュ"
+            create_dir_if_not_exists "${target_dir}/大メッシュ/中メッシュ/小メッシュ"
             
             # ファイルをコピー
             find "$source_dir" -type f $$ -name "*.shp" -o -name "*.shx" -o -name "*.dbf" -o -name "*.prj" $$ -exec cp {} "${target_dir}/大メッシュ/中メッシュ/小メッシュ/" \;
@@ -67,7 +78,7 @@ copy_shape_files() {
                 log_message "エラー: 店舗 ${store} のシェープファイルの複写に失敗しました"
             fi
         else
-            log_message "警告: 店舗 ${store} のディレクトリが見つかりません"
+            log_message "警告: 店舗 ${store} のディレクトリが見つかりません: $source_dir"
         fi
     done
 }
@@ -75,6 +86,8 @@ copy_shape_files() {
 # 更新メッシュファイルリスト作成
 create_update_mesh_list() {
     log_message "更新メッシュファイルリストを作成中"
+    
+    create_dir_if_not_exists "$(dirname "$UPDATE_MESH_LIST")"
     
     # 更新メッシュファイルリストを初期化
     : > "$UPDATE_MESH_LIST"
@@ -97,6 +110,7 @@ create_update_mesh_list() {
 # 転送用圧縮ファイルの作成
 create_transfer_compressed_file() {
     log_message "転送用圧縮ファイルを作成中"
+    create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_FILE")"
     tar -czf "$GIS_CHIKEI_TRANS_FILE" -C "$(dirname "$WORK_DIR")" "$(basename "$WORK_DIR")" "$UPDATE_MESH_LIST"
     log_message "転送用圧縮ファイルを作成しました: $GIS_CHIKEI_TRANS_FILE"
 }
@@ -104,8 +118,12 @@ create_transfer_compressed_file() {
 # シェープファイル削除
 delete_shape_files() {
     log_message "シェープファイルを削除中"
-    rm -rf "$WORK_DIR"
-    log_message "シェープファイルを削除しました"
+    if [ -d "$WORK_DIR" ]; then
+        rm -rf "$WORK_DIR"
+        log_message "シェープファイルを削除しました"
+    else
+        log_message "警告: 削除するシェープファイルが見つかりません: $WORK_DIR"
+    fi
 }
 
 # メインプロセス
@@ -139,12 +157,21 @@ main() {
 
     # GYOMU_ROOTが相対パスの場合、絶対パスに変換
     if [[ "$GYOMU_ROOT" != /* ]]; then
-        GYOMU_ROOT="$(cd "$(dirname "$SHELL_PRM_FILE_PATH")/$GYOMU_ROOT" && pwd)"
+        GYOMU_ROOT="$(cd "$(dirname "$SHELL_PRM_FILE_PATH")/.." && pwd)"
         log_message "GYOMU_ROOTを絶対パスに変換しました: $GYOMU_ROOT"
     fi
 
+    # 各パラメータにGYOMU_ROOTを適用
+    LOG_FILE="$GYOMU_ROOT/$LOG_FILE"
+    SHAPE_FILES_ROOT="$GYOMU_ROOT/$SHAPE_FILES_ROOT"
+    WORK_DIR="$GYOMU_ROOT/$WORK_DIR"
+    UPDATE_MESH_LIST="$GYOMU_ROOT/$UPDATE_MESH_LIST"
+    TRANSFER_RESULT_FILE="$GYOMU_ROOT/$TRANSFER_RESULT_FILE"
+    TRANSFER_INFO_FILE="$GYOMU_ROOT/$TRANSFER_INFO_FILE"
+    GIS_CHIKEI_TRANS_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_FILE"
+
     # ログファイルのディレクトリを作成
-    mkdir -p "$(dirname "$LOG_FILE")"
+    create_dir_if_not_exists "$(dirname "$LOG_FILE")"
     log_message "ファイル処理を開始します"
     log_message "コンフィグファイルを読み込みました: $SHELL_PRM_FILE_PATH"
 
