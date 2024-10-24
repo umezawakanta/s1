@@ -110,32 +110,43 @@ delete_shape_files() {
 
 # メインプロセス
 main() {
-    # ログファイルのパスが設定されていない場合のデフォルト値を設定
-    LOG_FILE=${LOG_FILE:-"/sxhome/def/sysdef/log/process.log"}
-    # ログファイルのディレクトリを作成
-    mkdir -p "$(dirname "$LOG_FILE")"
-    log_message "ファイル処理を開始します"
-    
     # コンフィグファイルのパスを引数から取得
     if [ $# -eq 0 ]; then
-        log_message "エラー: コンフィグファイルのパスが指定されていません"
+        echo "エラー: コンフィグファイルのパスが指定されていません"
         exit 1
     fi
 
     SHELL_PRM_FILE_PATH="$1"
-    check_file_exists "$SHELL_PRM_FILE_PATH"
-    log_message "コンフィグファイルを読み込みます: $SHELL_PRM_FILE_PATH"
+    if [ ! -f "$SHELL_PRM_FILE_PATH" ]; then
+        echo "エラー: コンフィグファイル $SHELL_PRM_FILE_PATH が存在しません"
+        exit 1
+    fi
 
     # コンフィグファイルの読み込み
     source "$SHELL_PRM_FILE_PATH"
 
-    # 変数の設定
-    SHAPE_FILES_ROOT="/sxhome/filechg/GIS/CHIKEI/shape"
-    WORK_DIR="/sxhome/filechg/GIS/CHIKEI/comp_work"
-    UPDATE_MESH_LIST="$WORK_DIR/B003KY_UpdateMeshList.csv"
-    TRANSFER_RESULT_FILE="/sxhome/filechg/GIS/CHIKEI/result/B003KyouyoTensoinfo.dat"
-    TRANSFER_INFO_FILE="/sxhome/filechg/GIS/CHIKEI/inf/B003KyouyoTensoinfo.dat"
-    GIS_CHIKEI_TRANS_FILE="/sxhome/filechg/GIS/CHIKEI/FT/B003KY_$(date +%Y%m%d%H%M%S).tar.gz"
+    # 必須パラメータの確認
+    required_params=(
+        "LOG_FILE" "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
+        "TRANSFER_RESULT_FILE" "TRANSFER_INFO_FILE" "GIS_CHIKEI_TRANS_FILE"
+    )
+    for param in "${required_params[@]}"; do
+        if [ -z "${!param}" ]; then
+            echo "エラー: 必須パラメータ '$param' が設定されていません"
+            exit 1
+        fi
+    done
+
+    # GYOMU_ROOTが相対パスの場合、絶対パスに変換
+    if [[ "$GYOMU_ROOT" != /* ]]; then
+        GYOMU_ROOT="$(cd "$(dirname "$SHELL_PRM_FILE_PATH")/$GYOMU_ROOT" && pwd)"
+        log_message "GYOMU_ROOTを絶対パスに変換しました: $GYOMU_ROOT"
+    fi
+
+    # ログファイルのディレクトリを作成
+    mkdir -p "$(dirname "$LOG_FILE")"
+    log_message "ファイル処理を開始します"
+    log_message "コンフィグファイルを読み込みました: $SHELL_PRM_FILE_PATH"
 
     # 処理の実行
     check_transfer_result
