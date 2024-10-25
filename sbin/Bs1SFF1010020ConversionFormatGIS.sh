@@ -27,6 +27,16 @@ check_file_exists() {
     return 0
 }
 
+# 転送指示結果ファイルの存在チェック
+check_transfer_instruction_result() {
+    log_message "INFO" "転送指示結果ファイルの存在確認: $TRANSFER_RESULT_FILE"
+    if ! check_file_exists "$TRANSFER_RESULT_FILE"; then
+        log_message "ERROR" "転送指示結果ファイル $TRANSFER_RESULT_FILE が存在しません"
+        exit 1
+    fi
+    log_message "INFO" "転送指示結果ファイルの存在を確認しました: $TRANSFER_RESULT_FILE"
+}
+
 # ディレクトリの存在をチェックする関数
 check_dir_exists() {
     if [ ! -d "$1" ]; then
@@ -195,11 +205,14 @@ main() {
     log_message "INFO" "ファイル処理を開始します"
     log_message "INFO" "コンフィグファイルを読み込みました: $SHELL_PRM_FILE_PATH"
 
+    # 転送指示結果ファイルの存在チェック
+    check_transfer_instruction_result
+
     # 処理の実行
     copy_shape_files || log_message "ERROR" "シェープファイルの複写に失敗しました"
     create_update_mesh_list || log_message "ERROR" "更新メッシュファイルリストの作成に失敗しました"
     create_transfer_compressed_file || log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
-    # delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
+    delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
     
     if [ $ERROR_COUNT -eq 0 ]; then
         log_message "INFO" "ファイル処理が正常に完了しました"
