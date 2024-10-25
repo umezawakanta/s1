@@ -18,13 +18,13 @@ MAX_RETRIES=3
 GYOMU_ROOT=.
 
 # File paths
-LOG_FILE=$GYOMU_ROOT/log/process.log
-SHAPE_FILES_ROOT=$GYOMU_ROOT/shape
-WORK_DIR=$GYOMU_ROOT/comp_work
+LOG_FILE=log/process.log
+SHAPE_FILES_ROOT=shape
+WORK_DIR=shape/comp_work
 UPDATE_MESH_LIST=$WORK_DIR/B003KY_UpdateMeshList.csv
-TRANSFER_RESULT_FILE=$GYOMU_ROOT/result/B003KyouyoTensoinfo.dat
-TRANSFER_INFO_FILE=$GYOMU_ROOT/inf/B003KyouyoTensoinfo.dat
-GIS_CHIKEI_TRANS_FILE=$GYOMU_ROOT/FT/B003KY_$(date +%Y%m%d%H%M%S).tar.gz
+TRANSFER_RESULT_FILE=result/B003KyouyoTensoinfo.dat
+TRANSFER_INFO_FILE=inf/B003KyouyoTensoinfo.dat
+GIS_CHIKEI_TRANS_FILE=FT/B003KY_$(date +%Y%m%d%H%M%S).tar.gz
 
 # Backup directory
 BACKUP_DIR=$GYOMU_ROOT/back

@@ -3,6 +3,7 @@
 
 # Ignore compressed files
 *.tar.gz
+*.zip
 
 # Ignore specific directories
 /back/
@@ -11,6 +12,7 @@
 
 # Ignore data files
 *.dat
+*.csv
 
 # Ignore shape files
 *.dbf
