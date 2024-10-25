@@ -160,23 +160,38 @@ delete_shape_files() {
 backup_transferred_file() {
     log_message "INFO" "転送済みファイルのバックアップを開始します"
     
-    local backup_dir="${BACKUP_DIR}/$(date +%Y%m%d)"
-    local backup_file="${backup_dir}/$(basename "$TRANSFER_RESULT_FILE").$(date +%H%M%S)"
+    local backup_dir="${BACKUP_DIR}"
+    local timestamp=$(date +%Y%m%d%H%M%S)
+    local backup_file="${backup_dir}/B003KY_${timestamp}.tar.gz"
+    local transfer_result_backup="${backup_dir}/B003KyouyoTensoInfo.dat_${timestamp}"
     
     # バックアップディレクトリの作成
     create_dir_if_not_exists "$backup_dir"
     
-    # バックアップの実行
-    if cp "$TRANSFER_RESULT_FILE" "$backup_file"; then
-        log_message "INFO" "転送済みファイルをバックアップしました: $backup_file"
+    # 転送用圧縮ファイルのバックアップ
+    if [ -f "$GIS_CHIKEI_TRANS_FILE" ]; then
+        if cp "$GIS_CHIKEI_TRANS_FILE" "$backup_file"; then
+            log_message "INFO" "転送用圧縮ファイルをバックアップしました: $backup_file"
+        else
+            log_message "ERROR" "転送用圧縮ファイルのバックアップに失敗しました"
+            return 1
+        fi
     else
-        log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
+        log_message "WARN" "転送用圧縮ファイルが見つかりません: $GIS_CHIKEI_TRANS_FILE"
+    fi
+    
+    # 転送指示結果ファイルのバックアップ
+    if cp "$TRANSFER_RESULT_FILE" "$transfer_result_backup"; then
+        log_message "INFO" "転送指示結果ファイルをバックアップしました: $transfer_result_backup"
+    else
+        log_message "ERROR" "転送指示結果ファイルのバックアップに失敗しました"
         return 1
     fi
     
-    # 古いバックアップの削除（7日以上前のファイル）
-    find "$BACKUP_DIR" -type f -mtime +7 -delete
-    log_message "INFO" "7日以上前の古いバックアップを削除しました"
+    # 古いバックアップの削除（3世代より古いファイル）
+    local files_to_keep=6  # 2ファイル * 3世代
+    ls -t "$backup_dir"/B003KY_*.tar.gz "$backup_dir"/B003KyouyoTensoInfo.dat_* 2>/dev/null | tail -n +$((files_to_keep + 1)) | xargs -r rm
+    log_message "INFO" "3世代より古いバックアップを削除しました"
 }
 
 # メインプロセス

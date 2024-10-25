@@ -27,7 +27,7 @@ TRANSFER_INFO_FILE=inf/B003KyouyoTensoinfo.dat
 GIS_CHIKEI_TRANS_FILE=FT/B003KY_$(date +%Y%m%d%H%M%S).tar.gz
 
 # Backup directory
-BACKUP_DIR=$GYOMU_ROOT/back
+BACKUP_DIR=back
 
 # 圧縮ファイル名のフォーマット
 COMPRESSED_FILE_FORMAT="B003KY_%Y%m%d%H%M%S.tar.gz"
