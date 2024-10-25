@@ -156,6 +156,29 @@ delete_shape_files() {
     fi
 }
 
+# 転送済みファイルのバックアップ
+backup_transferred_file() {
+    log_message "INFO" "転送済みファイルのバックアップを開始します"
+    
+    local backup_dir="${BACKUP_DIR}/$(date +%Y%m%d)"
+    local backup_file="${backup_dir}/$(basename "$TRANSFER_RESULT_FILE").$(date +%H%M%S)"
+    
+    # バックアップディレクトリの作成
+    create_dir_if_not_exists "$backup_dir"
+    
+    # バックアップの実行
+    if cp "$TRANSFER_RESULT_FILE" "$backup_file"; then
+        log_message "INFO" "転送済みファイルをバックアップしました: $backup_file"
+    else
+        log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
+        return 1
+    fi
+    
+    # 古いバックアップの削除（7日以上前のファイル）
+    find "$BACKUP_DIR" -type f -mtime +7 -delete
+    log_message "INFO" "7日以上前の古いバックアップを削除しました"
+}
+
 # メインプロセス
 main() {
     # コンフィグファイルのパスを引数から取得
@@ -177,6 +200,7 @@ main() {
     required_params=(
         "LOG_FILE" "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
         "TRANSFER_RESULT_FILE" "TRANSFER_INFO_FILE" "GIS_CHIKEI_TRANS_FILE"
+        "BACKUP_DIR"
     )
     for param in "${required_params[@]}"; do
         if [ -z "${!param}" ]; then
@@ -199,6 +223,7 @@ main() {
     TRANSFER_RESULT_FILE="$GYOMU_ROOT/$TRANSFER_RESULT_FILE"
     TRANSFER_INFO_FILE="$GYOMU_ROOT/$TRANSFER_INFO_FILE"
     GIS_CHIKEI_TRANS_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_FILE"
+    BACKUP_DIR="$GYOMU_ROOT/$BACKUP_DIR"
 
     # ログファイルのディレクトリを作成
     create_dir_if_not_exists "$(dirname "$LOG_FILE")"
@@ -212,6 +237,7 @@ main() {
     copy_shape_files || log_message "ERROR" "シェープファイルの複写に失敗しました"
     create_update_mesh_list || log_message "ERROR" "更新メッシュファイルリストの作成に失敗しました"
     create_transfer_compressed_file || log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
+    backup_transferred_file || log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
     delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
     
     if [ $ERROR_COUNT -eq 0 ]; then
