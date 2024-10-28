@@ -27,16 +27,6 @@ check_file_exists() {
     return 0
 }
 
-# 転送指示結果ファイルの存在チェック
-check_transfer_instruction_result() {
-    log_message "INFO" "転送指示結果ファイルの存在確認: $TRANSFER_RESULT_FILE"
-    if ! check_file_exists "$TRANSFER_RESULT_FILE"; then
-        log_message "ERROR" "転送指示結果ファイル $TRANSFER_RESULT_FILE が存在しません"
-        exit 1
-    fi
-    log_message "INFO" "転送指示結果ファイルの存在を確認しました: $TRANSFER_RESULT_FILE"
-}
-
 # ディレクトリの存在をチェックする関数
 check_dir_exists() {
     if [ ! -d "$1" ]; then
@@ -54,43 +44,47 @@ create_dir_if_not_exists() {
     fi
 }
 
-# シェープファイル複写
-copy_shape_files() {
-    log_message "INFO" "シェープファイルの複写を開始します"
+# シェープファイル収集処理
+collect_shape_files() {
+    log_message "INFO" "シェープファイルの収集を開始します"
     
     local copy_success=false
     
-    # 8系と9系のディレクトリを検索
-    for sys in sys08 sys09; do
-        if [ ! -d "${SHAPE_FILES_ROOT}/${sys}" ]; then
-            log_message "WARN" "${sys} ディレクトリが見つかりません: ${SHAPE_FILES_ROOT}/${sys}"
+    # 2010000ディレクトリのみを検索
+    if [ ! -d "${SHAPE_FILES_ROOT}/2010000" ]; then
+        log_message "ERROR" "2010000 ディレクトリが見つかりません: ${SHAPE_FILES_ROOT}/2010000"
+        return 1
+    fi
+    
+    log_message "INFO" "ディレクトリを検索 : ${SHAPE_FILES_ROOT}/2010000"
+    log_message "DEBUG" "SHAPE_FILES_ROOT の内容:"
+    ls -R "${SHAPE_FILES_ROOT}" | tee -a "$LOG_FILE"
+    
+    # 図郭番号ディレクトリを検索
+    for mesh_dir in "${SHAPE_FILES_ROOT}/2010000"/*; do
+        if [ ! -d "$mesh_dir" ]; then
+            log_message "DEBUG" "スキップされたディレクトリ: $mesh_dir"
             continue
         fi
-        log_message "INFO" "ディレクトリを検索 : ${SHAPE_FILES_ROOT}/${sys}"
-        find "${SHAPE_FILES_ROOT}/${sys}" -type d -regex ".*/[0-9][0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | while read -r source_dir; do
-            # 図面番号を抽出
-            log_message "INFO" "図面番号を抽出"
-            local drawing_number=$(echo "$source_dir" | grep -oE '[0-9]{7}$')
-            log_message "WARN" "図面番号 drawing_number: $drawing_number"
-            if [ -z "$drawing_number" ]; then
-                log_message "WARN" "図面番号を抽出できません: $source_dir"
-                continue
-            fi
-            
-            local target_dir="${WORK_DIR}/${drawing_number}"
-            log_message "INFO" "シェープファイルを複写します: $source_dir -> $target_dir"
-            
-            # ディレクトリ構造を作成
-            create_dir_if_not_exists "$target_dir"
-            
-            # ファイルをコピー
-            if find "$source_dir" -type f $$ -name "*.shp" -o -name "*.shx" -o -name "*.dbf" -o -name "*.prj" $$ -exec cp {} "$target_dir/" \; ; then
-                log_message "INFO" "図面番号 ${drawing_number} のシェープファイルを正常に複写しました"
-                copy_success=true
-            else
-                log_message "ERROR" "図面番号 ${drawing_number} のシェープファイルの複写に失敗しました"
-            fi
-        done
+        
+        local mesh_number=$(basename "$mesh_dir")
+        local target_dir="${WORK_DIR}/${mesh_number}"
+        log_message "INFO" "シェープファイルを複写します: $mesh_dir -> $target_dir"
+        
+        # ディレクトリ構造を作成
+        create_dir_if_not_exists "$target_dir"
+        
+        log_message "DEBUG" "find コマンドを実行: find \"$mesh_dir\" -type f $$ -name \"*.shp\" -o -name \"*.shx\" -o -name \"*.dbf\" -o -name \"*.prj\" -o -name \"*.fix\" $$ -exec cp {} \"$target_dir/\" \;"
+        
+        # ファイルをコピー
+        if find "$mesh_dir" -type f $$ -name "*.shp" -o -name "*.shx" -o -name "*.dbf" -o -name "*.prj" -o -name "*.fix" $$ -exec cp {} "$target_dir/" \; ; then
+            log_message "INFO" "図郭番号 ${mesh_number} のシェープファイルを正常に複写しました"
+            copy_success=true
+        else
+            log_message "ERROR" "図郭番号 ${mesh_number} のシェープファイルの複写に失敗しました"
+            log_message "DEBUG" "失敗したディレクトリの内容:"
+            ls -R "$mesh_dir" | tee -a "$LOG_FILE"
+        fi
     done
     
     if [ "$copy_success" = false ]; then
@@ -109,13 +103,13 @@ create_update_mesh_list() {
     log_message "INFO" "更新メッシュファイルリストを初期化"
     : > "$UPDATE_MESH_LIST"
     
-    # 各図面番号のディレクトリをループ
-    log_message "INFO" "各図面番号のディレクトリをループ"
+    # 各図郭番号のディレクトリをループ
+    log_message "INFO" "各図郭番号のディレクトリをループ"
     local list_created=false
-    for drawing_dir in "${WORK_DIR}"/*; do
-        if [ -d "$drawing_dir" ]; then
-            drawing_number=$(basename "$drawing_dir")
-            echo "${drawing_number}" >> "$UPDATE_MESH_LIST"
+    for mesh_dir in "${WORK_DIR}"/*; do
+        if [ -d "$mesh_dir" ]; then
+            mesh_number=$(basename "$mesh_dir")
+            echo "${mesh_number}" >> "$UPDATE_MESH_LIST"
             list_created=true
         fi
     done
@@ -181,17 +175,101 @@ backup_transferred_file() {
     fi
     
     # 転送指示結果ファイルのバックアップ
-    if cp "$TRANSFER_RESULT_FILE" "$transfer_result_backup"; then
-        log_message "INFO" "転送指示結果ファイルをバックアップしました: $transfer_result_backup"
+    if [ -f "$TRANSFER_RESULT_FILE" ]; then
+        if cp "$TRANSFER_RESULT_FILE" "$transfer_result_backup"; then
+            log_message "INFO" "転送指示結果ファイルをバックアップしました: $transfer_result_backup"
+        else
+            log_message "ERROR" "転送指示結果ファイルのバックアップに失敗しました"
+            return 1
+        fi
     else
-        log_message "ERROR" "転送指示結果ファイルのバックアップに失敗しました"
-        return 1
+        log_message "WARN" "転送指示結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
     fi
     
     # 古いバックアップの削除（3世代より古いファイル）
     local files_to_keep=6  # 2ファイル * 3世代
     ls -t "$backup_dir"/B003KY_*.tar.gz "$backup_dir"/B003KyouyoTensoInfo.dat_* 2>/dev/null | tail -n +$((files_to_keep + 1)) | xargs -r rm
     log_message "INFO" "3世代より古いバックアップを削除しました"
+}
+
+# 転送指示結果ファイルの処理
+process_transfer_instruction_result() {
+    log_message "INFO" "転送指示結果ファイルの処理を開始します"
+
+    if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
+        log_message "ERROR" "転送指示結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
+        return 1
+    fi
+
+    log_message "DEBUG" "転送指示結果ファイルの内容:"
+    cat "$TRANSFER_RESULT_FILE" | tee -a "$LOG_FILE"
+
+    # 転送指示結果ファイルの読み込み
+    local return_code=$(grep -oP '(?<=リターンコード=)\d+' "$TRANSFER_RESULT_FILE")
+    
+    if [ -z "$return_code" ]; then
+        log_message "ERROR" "転送指示結果ファイルからリターンコードを読み取れませんでした"
+        return 1
+    fi
+
+    log_message "DEBUG" "読み取ったリターンコード: $return_code"
+
+    # リターンコードの確認
+    if [ "$return_code" -eq 0 ]; then
+        log_message "INFO" "転送が正常に完了しました（リターンコード: $return_code）"
+    else
+        log_message "ERROR" "転送中にエラーが発生しました（リターンコード: $return_code）"
+    fi
+
+    # 転送指示結果ファイルの削除
+    if rm "$TRANSFER_RESULT_FILE"; then
+        log_message "INFO" "転送指示結果ファイルを削除しました: $TRANSFER_RESULT_FILE"
+    else
+        log_message "ERROR" "転送指示結果ファイルの削除に失敗しました: $TRANSFER_RESULT_FILE"
+        return 1
+    fi
+
+    log_message "INFO" "転送指示結果ファイルの処理が完了しました"
+}
+
+# 転送指示情報の更新
+update_transfer_instruction_info() {
+    log_message "INFO" "転送指示情報の更新処理を開始します"
+
+    if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
+        log_message "ERROR" "転送指示結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
+        return 1
+    fi
+
+    log_message "DEBUG" "転送指示結果ファイルの内容:"
+    cat "$TRANSFER_RESULT_FILE" | tee -a "$LOG_FILE"
+
+    # 転送指示結果ファイルの内容を読み込む
+    local status=$(grep -oP '(?<=status,)\d+' "$TRANSFER_RESULT_FILE")
+    
+    log_message "INFO" "status : $status"
+
+    if [ -z "$status" ]; then
+        log_message "ERROR" "転送指示結果ファイルからステータスを読み取れませんでした"
+        return 1
+    fi
+
+    # ステータスが「1：連携済み」以外かチェック
+    if [ "$status" != "1" ]; then
+        log_message "INFO" "ステータスが連携済み以外です。転送指示情報ファイルを更新します"
+        
+        # 転送指示結果ファイルの内容を転送指示情報ファイルに転記
+        if cp "$TRANSFER_RESULT_FILE" "$TRANSFER_INFO_FILE"; then
+            log_message "INFO" "転送指示情報ファイルを更新しました: $TRANSFER_INFO_FILE"
+        else
+            log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
+            return 1
+        fi
+    else
+        log_message "INFO" "ステータスが連携済みです。転送指示情報ファイルの更新はスキップします"
+    fi
+
+    log_message "INFO" "転送指示情報の更新処理が完了しました"
 }
 
 # メインプロセス
@@ -232,6 +310,7 @@ main() {
 
     # 各パラメータにGYOMU_ROOTを適用
     LOG_FILE="$GYOMU_ROOT/$LOG_FILE"
+    
     SHAPE_FILES_ROOT="$GYOMU_ROOT/$SHAPE_FILES_ROOT"
     WORK_DIR="$GYOMU_ROOT/$WORK_DIR"
     UPDATE_MESH_LIST="$GYOMU_ROOT/$UPDATE_MESH_LIST"
@@ -245,14 +324,13 @@ main() {
     log_message "INFO" "ファイル処理を開始します"
     log_message "INFO" "コンフィグファイルを読み込みました: $SHELL_PRM_FILE_PATH"
 
-    # 転送指示結果ファイルの存在チェック
-    check_transfer_instruction_result
-
     # 処理の実行
-    copy_shape_files || log_message "ERROR" "シェープファイルの複写に失敗しました"
+    collect_shape_files || log_message "ERROR" "シェープファイルの収集に失敗しました"
     create_update_mesh_list || log_message "ERROR" "更新メッシュファイルリストの作成に失敗しました"
     create_transfer_compressed_file || log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
     backup_transferred_file || log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
+    process_transfer_instruction_result || log_message "ERROR" "転送指示結果ファイルの処理に失敗しました"
+    update_transfer_instruction_info || log_message "ERROR" "転送指示情報の更新に失敗しました"
     delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
     
     if [ $ERROR_COUNT -eq 0 ]; then
