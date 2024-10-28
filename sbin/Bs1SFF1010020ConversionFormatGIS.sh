@@ -18,6 +18,18 @@ log_message() {
     fi
 }
 
+# コマンドをログに記録し、実行する関数
+log_and_execute() {
+    local command="$1"
+    log_message "DEBUG" "実行コマンド: $command"
+    eval "$command"
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        log_message "ERROR" "コマンドの実行に失敗しました。終了コード: $exit_code"
+    fi
+    return $exit_code
+}
+
 # ファイルの存在をチェックする関数
 check_file_exists() {
     if [ ! -f "$1" ]; then
@@ -39,7 +51,7 @@ check_dir_exists() {
 # ディレクトリを作成する関数
 create_dir_if_not_exists() {
     if [ ! -d "$1" ]; then
-        mkdir -p "$1"
+        log_and_execute "mkdir -p \"$1\""
         log_message "INFO" "ディレクトリを作成しました: $1"
     fi
 }
@@ -58,7 +70,7 @@ collect_shape_files() {
     
     log_message "INFO" "ディレクトリを検索 : ${SHAPE_FILES_ROOT}/2010000"
     log_message "DEBUG" "SHAPE_FILES_ROOT の内容:"
-    ls -R "${SHAPE_FILES_ROOT}" | tee -a "$LOG_FILE"
+    log_and_execute "ls -R \\"${SHAPE_FILES_ROOT}\\""
     
     # 図郭番号ディレクトリを検索
     for mesh_dir in "${SHAPE_FILES_ROOT}/2010000"/*; do
@@ -74,16 +86,18 @@ collect_shape_files() {
         # ディレクトリ構造を作成
         create_dir_if_not_exists "$target_dir"
         
-        log_message "DEBUG" "find コマンドを実行: find \"$mesh_dir\" -type f $$ -name \"*.shp\" -o -name \"*.shx\" -o -name \"*.dbf\" -o -name \"*.prj\" -o -name \"*.fix\" $$ -exec cp {} \"$target_dir/\" \;"
+        # findコマンドを構築
+        local find_command="find \"$mesh_dir\" -type f -regex \".*\.\(shp\|shx\|dbf\|prj\|fix\)$\" -exec cp {} \"$target_dir/\" \\;"
+        log_message "DEBUG" "find コマンドを実行: $find_command"
         
         # ファイルをコピー
-        if find "$mesh_dir" -type f $$ -name "*.shp" -o -name "*.shx" -o -name "*.dbf" -o -name "*.prj" -o -name "*.fix" $$ -exec cp {} "$target_dir/" \; ; then
+        if log_and_execute "$find_command"; then
             log_message "INFO" "図郭番号 ${mesh_number} のシェープファイルを正常に複写しました"
             copy_success=true
         else
             log_message "ERROR" "図郭番号 ${mesh_number} のシェープファイルの複写に失敗しました"
             log_message "DEBUG" "失敗したディレクトリの内容:"
-            ls -R "$mesh_dir" | tee -a "$LOG_FILE"
+            log_and_execute "ls -R \\"$mesh_dir\\""
         fi
     done
     
@@ -101,7 +115,7 @@ create_update_mesh_list() {
     
     # 更新メッシュファイルリストを初期化
     log_message "INFO" "更新メッシュファイルリストを初期化"
-    : > "$UPDATE_MESH_LIST"
+    log_and_execute ": > \"$UPDATE_MESH_LIST\""
     
     # 各図郭番号のディレクトリをループ
     log_message "INFO" "各図郭番号のディレクトリをループ"
@@ -109,7 +123,7 @@ create_update_mesh_list() {
     for mesh_dir in "${WORK_DIR}"/*; do
         if [ -d "$mesh_dir" ]; then
             mesh_number=$(basename "$mesh_dir")
-            echo "${mesh_number}" >> "$UPDATE_MESH_LIST"
+            log_and_execute "echo \"${mesh_number}\" >> \"$UPDATE_MESH_LIST\""
             list_created=true
         fi
     done
@@ -126,7 +140,7 @@ create_update_mesh_list() {
 create_transfer_compressed_file() {
     log_message "INFO" "転送用圧縮ファイルを作成中"
     create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_FILE")"
-    if tar -czf "$GIS_CHIKEI_TRANS_FILE" -C "$(dirname "$WORK_DIR")" "$(basename "$WORK_DIR")" "$UPDATE_MESH_LIST"; then
+    if log_and_execute "tar -czf \"$GIS_CHIKEI_TRANS_FILE\" -C \"$(dirname "$WORK_DIR")\" \"$(basename "$WORK_DIR")\" \"$UPDATE_MESH_LIST\""; then
         log_message "INFO" "転送用圧縮ファイルを作成しました: $GIS_CHIKEI_TRANS_FILE"
     else
         log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
@@ -139,7 +153,7 @@ delete_shape_files() {
     log_message "INFO" "シェープファイルを削除中"
     if [ -d "$WORK_DIR" ]; then
         log_message "INFO" "ファイル圧縮用ワークディレクトリを削除: $WORK_DIR"
-        if rm -rf "$WORK_DIR"; then
+        if log_and_execute "rm -rf \"$WORK_DIR\""; then
             log_message "INFO" "シェープファイルを削除しました"
         else
             log_message "ERROR" "シェープファイルの削除に失敗しました"
@@ -164,7 +178,7 @@ backup_transferred_file() {
     
     # 転送用圧縮ファイルのバックアップ
     if [ -f "$GIS_CHIKEI_TRANS_FILE" ]; then
-        if cp "$GIS_CHIKEI_TRANS_FILE" "$backup_file"; then
+        if log_and_execute "cp \"$GIS_CHIKEI_TRANS_FILE\" \"$backup_file\""; then
             log_message "INFO" "転送用圧縮ファイルをバックアップしました: $backup_file"
         else
             log_message "ERROR" "転送用圧縮ファイルのバックアップに失敗しました"
@@ -176,7 +190,7 @@ backup_transferred_file() {
     
     # 転送指示結果ファイルのバックアップ
     if [ -f "$TRANSFER_RESULT_FILE" ]; then
-        if cp "$TRANSFER_RESULT_FILE" "$transfer_result_backup"; then
+        if log_and_execute "cp \"$TRANSFER_RESULT_FILE\" \"$transfer_result_backup\""; then
             log_message "INFO" "転送指示結果ファイルをバックアップしました: $transfer_result_backup"
         else
             log_message "ERROR" "転送指示結果ファイルのバックアップに失敗しました"
@@ -188,7 +202,7 @@ backup_transferred_file() {
     
     # 古いバックアップの削除（3世代より古いファイル）
     local files_to_keep=6  # 2ファイル * 3世代
-    ls -t "$backup_dir"/B003KY_*.tar.gz "$backup_dir"/B003KyouyoTensoInfo.dat_* 2>/dev/null | tail -n +$((files_to_keep + 1)) | xargs -r rm
+    log_and_execute "ls -t \"$backup_dir\"/B003KY_*.tar.gz \"$backup_dir\"/B003KyouyoTensoInfo.dat_* 2>/dev/null | tail -n +$((files_to_keep + 1)) | xargs -r rm"
     log_message "INFO" "3世代より古いバックアップを削除しました"
 }
 
@@ -202,10 +216,10 @@ process_transfer_instruction_result() {
     fi
 
     log_message "DEBUG" "転送指示結果ファイルの内容:"
-    cat "$TRANSFER_RESULT_FILE" | tee -a "$LOG_FILE"
+    log_and_execute "cat \"$TRANSFER_RESULT_FILE\""
 
     # 転送指示結果ファイルの読み込み
-    local return_code=$(grep -oP '(?<=リターンコード=)\d+' "$TRANSFER_RESULT_FILE")
+    local return_code=$(grep -oP '(?<=リターンコード=)\\d+' "$TRANSFER_RESULT_FILE")
     
     if [ -z "$return_code" ]; then
         log_message "ERROR" "転送指示結果ファイルからリターンコードを読み取れませんでした"
@@ -222,7 +236,7 @@ process_transfer_instruction_result() {
     fi
 
     # 転送指示結果ファイルの削除
-    if rm "$TRANSFER_RESULT_FILE"; then
+    if log_and_execute "rm \"$TRANSFER_RESULT_FILE\""; then
         log_message "INFO" "転送指示結果ファイルを削除しました: $TRANSFER_RESULT_FILE"
     else
         log_message "ERROR" "転送指示結果ファイルの削除に失敗しました: $TRANSFER_RESULT_FILE"
@@ -242,10 +256,10 @@ update_transfer_instruction_info() {
     fi
 
     log_message "DEBUG" "転送指示結果ファイルの内容:"
-    cat "$TRANSFER_RESULT_FILE" | tee -a "$LOG_FILE"
+    log_and_execute "cat \"$TRANSFER_RESULT_FILE\""
 
     # 転送指示結果ファイルの内容を読み込む
-    local status=$(grep -oP '(?<=status,)\d+' "$TRANSFER_RESULT_FILE")
+    local status=$(grep -oP '(?<=status,)\\d+' "$TRANSFER_RESULT_FILE")
     
     log_message "INFO" "status : $status"
 
@@ -259,7 +273,7 @@ update_transfer_instruction_info() {
         log_message "INFO" "ステータスが連携済み以外です。転送指示情報ファイルを更新します"
         
         # 転送指示結果ファイルの内容を転送指示情報ファイルに転記
-        if cp "$TRANSFER_RESULT_FILE" "$TRANSFER_INFO_FILE"; then
+        if log_and_execute "cp \"$TRANSFER_RESULT_FILE\" \"$TRANSFER_INFO_FILE\""; then
             log_message "INFO" "転送指示情報ファイルを更新しました: $TRANSFER_INFO_FILE"
         else
             log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
@@ -269,7 +283,7 @@ update_transfer_instruction_info() {
         log_message "INFO" "ステータスが連携済みです。転送指示情報ファイルの更新はスキップします"
     fi
 
-    log_message "INFO" "転送指示情報の更新処理が完了しました"
+    log_message  "INFO" "転送指示情報の更新処理が完了しました"
 }
 
 # メインプロセス
@@ -310,7 +324,6 @@ main() {
 
     # 各パラメータにGYOMU_ROOTを適用
     LOG_FILE="$GYOMU_ROOT/$LOG_FILE"
-    
     SHAPE_FILES_ROOT="$GYOMU_ROOT/$SHAPE_FILES_ROOT"
     WORK_DIR="$GYOMU_ROOT/$WORK_DIR"
     UPDATE_MESH_LIST="$GYOMU_ROOT/$UPDATE_MESH_LIST"
@@ -331,7 +344,7 @@ main() {
     backup_transferred_file || log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
     process_transfer_instruction_result || log_message "ERROR" "転送指示結果ファイルの処理に失敗しました"
     update_transfer_instruction_info || log_message "ERROR" "転送指示情報の更新に失敗しました"
-    delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
+    # delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
     
     if [ $ERROR_COUNT -eq 0 ]; then
         log_message "INFO" "ファイル処理が正常に完了しました"
