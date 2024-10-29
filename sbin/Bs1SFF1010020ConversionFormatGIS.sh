@@ -318,24 +318,25 @@ main() {
         exit 1
     fi
 
-    # 必須パラメータの確認
-    required_params=(
-        "LOG_FILE" "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
-        "TRANSFER_RESULT_FILE" "TRANSFER_INFO_FILE" "GIS_CHIKEI_TRANS_FILE"
-        "BACKUP_DIR"
-    )
-    for param in "${required_params[@]}"; do
-        if [ -z "${!param}" ]; then
-            echo "エラー: 必須パラメータ '$param' が設定されていません"
-            exit 1
-        fi
-    done
     log_message "INFO" "（5）環境情報ファイルの読み込み"
 
     log_message "INFO" "環境情報ファイルを読み込みました: $SHELL_PRM_FILE_PATH"
 
     log_message "INFO" "（6）業務変数の定義"
     JOB_NAME="EAM (GIS) 提供用転送形式変換 (地形図)"
+
+    # 必須パラメータの確認
+    required_params=(
+        "LOG_FILE" "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
+        "TRANSFER_RESULT_FILE" "TRANSFER_INFO_FILE" "GIS_CHIKEI_TRANS_FILE"
+        "BACKUP_DIR" "GYOMU_ROOT"
+    )
+    for param in "${required_params[@]}"; do
+        if [ -z "${!param}" ]; then
+            temp_log "ERROR" "必須パラメータ '$param' が設定されていません"
+            exit 1
+        fi
+    done
 
     # GYOMU_ROOTが相対パスの場合、絶対パスに変換
     if [[ "$GYOMU_ROOT" != /* ]]; then
@@ -353,10 +354,14 @@ main() {
     GIS_CHIKEI_TRANS_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_FILE"
     BACKUP_DIR="$GYOMU_ROOT/$BACKUP_DIR"
 
+    # ログファイルのディレクトリを作成
+    mkdir -p "$(dirname "$LOG_FILE")"
+
+    # これ以降、log_message 関数が使用可能になる
     log_message "INFO" "（7）開始メッセージ出力"
     log_message "INFO" "$JOB_NAME を開始します。"
 
-   log_message "INFO" "（8）転送指示結果ファイル存在チェック"
+    log_message "INFO" "（8）転送指示結果ファイル存在チェック"
     if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
         log_message "WARN" "転送指示結果ファイルが存在しません: $TRANSFER_RESULT_FILE"
     fi
@@ -383,12 +388,16 @@ main() {
     log_message "INFO" "（11）転送済みファイルバックアップ"
     backup_transferred_file || log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
 
-    # ログファイルのディレクトリを作成
-    create_dir_if_not_exists "$(dirname "$LOG_FILE")"
+    log_message "INFO" "（12）転送指示情報ファイル更新"
+    update_transfer_instruction_info || log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
 
-    # 処理の実行
+    log_message "INFO" "（13）シェープファイル収集"
     collect_shape_files || log_message "ERROR" "シェープファイルの収集に失敗しました"
+
+    log_message "INFO" "（14）更新メッシュファイルリスト作成"
     create_update_mesh_list || log_message "ERROR" "更新メッシュファイルリストの作成に失敗しました"
+
+    log_message "INFO" "（15）転送用圧縮ファイルの作成"
     create_transfer_compressed_file || log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
     backup_transferred_file || log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
     # process_transfer_instruction_result || log_message "ERROR" "転送指示結果ファイルの処理に失敗しました"
@@ -396,10 +405,10 @@ main() {
     # delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
     
     if [ $ERROR_COUNT -eq 0 ]; then
-        log_message "INFO" "ファイル処理が正常に完了しました"
+        log_message "INFO" "$JOB_NAME が正常に完了しました"
         exit 0
     else
-        log_message "ERROR" "ファイル処理中にエラーが発生しました。エラー数: $ERROR_COUNT"
+        log_message "ERROR" "$JOB_NAME の処理中にエラーが発生しました。エラー数: $ERROR_COUNT"
         exit 1
     fi
 }
