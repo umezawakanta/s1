@@ -292,9 +292,9 @@ main() {
     }
 
     temp_log "INFO" "（1）起動引数の個数チェック"
-    # コンフィグファイルのパスを引数から取得
+    # 環境情報ファイルのパスを引数から取得
     if [ $# -eq 0 ]; then
-        echo "エラー: コンフィグファイルのパスが指定されていません"
+        echo "エラー: 環境情報ファイルのパスが指定されていません"
         exit 1
     fi
 
@@ -307,6 +307,11 @@ main() {
 
     # コンフィグファイルの読み込み
     source "$SHELL_PRM_FILE_PATH"
+
+    # ログファイルのディレクトリを作成
+    mkdir -p "$(dirname "$LOG_FILE")"
+
+    # これ以降、log_message 関数が使用可能になる
 
     log_message "INFO" "（3）バッチ処理共通定義の読み込み"
     # バッチ処理共通定義ファイルのパスを設定
@@ -354,10 +359,7 @@ main() {
     GIS_CHIKEI_TRANS_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_FILE"
     BACKUP_DIR="$GYOMU_ROOT/$BACKUP_DIR"
 
-    # ログファイルのディレクトリを作成
-    mkdir -p "$(dirname "$LOG_FILE")"
 
-    # これ以降、log_message 関数が使用可能になる
     log_message "INFO" "（7）開始メッセージ出力"
     log_message "INFO" "$JOB_NAME を開始します。"
 
@@ -399,11 +401,25 @@ main() {
 
     log_message "INFO" "（15）転送用圧縮ファイルの作成"
     create_transfer_compressed_file || log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
-    backup_transferred_file || log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
-    # process_transfer_instruction_result || log_message "ERROR" "転送指示結果ファイルの処理に失敗しました"
-    update_transfer_instruction_info || log_message "ERROR" "転送指示情報の更新に失敗しました"
-    # delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
-    
+
+    log_message "INFO" "（16）転送指示情報ファイル更新"
+    update_transfer_instruction_info || log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
+
+    log_message "INFO" "（17）シェープファイル削除"
+    delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
+
+    log_message "INFO" "（18）転送指示結果ファイル削除"
+    if [ -f "$TRANSFER_RESULT_FILE" ]; then
+        if rm "$TRANSFER_RESULT_FILE"; then
+            log_message "INFO" "転送指示結果ファイルを削除しました: $TRANSFER_RESULT_FILE"
+        else
+            log_message "ERROR" "転送指示結果ファイルの削除に失敗しました: $TRANSFER_RESULT_FILE"
+        fi
+    else
+        log_message "WARN" "削除する転送指示結果ファイルが存在しません: $TRANSFER_RESULT_FILE"
+    fi
+
+    log_message "INFO" "（19）終了処理"
     if [ $ERROR_COUNT -eq 0 ]; then
         log_message "INFO" "$JOB_NAME が正常に完了しました"
         exit 0
