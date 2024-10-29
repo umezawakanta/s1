@@ -62,49 +62,70 @@ collect_shape_files() {
     
     local copy_success=false
     
-    # 2010000ディレクトリのみを検索
-    if [ ! -d "${SHAPE_FILES_ROOT}/2010000" ]; then
-        log_message "ERROR" "2010000 ディレクトリが見つかりません: ${SHAPE_FILES_ROOT}/2010000"
-        return 1
-    fi
+    # 支店番号ディレクトリを検索
+    local shiten_dirs=(2010000 2020000 2030000 2040000 2050000 2060000 2070000 2140000)
     
-    log_message "INFO" "ディレクトリを検索 : ${SHAPE_FILES_ROOT}/2010000"
-    log_message "DEBUG" "SHAPE_FILES_ROOT の内容:"
-    log_and_execute "ls -R \"${SHAPE_FILES_ROOT}\""
-    
-    # 図面番号ディレクトリを検索
-    for mesh_dir in "${SHAPE_FILES_ROOT}/2010000"/*; do
-        if [ ! -d "$mesh_dir" ]; then
-            log_message "DEBUG" "スキップされたディレクトリ: $mesh_dir"
+    for shiten_dir in "${shiten_dirs[@]}"; do
+        if [ ! -d "${SHAPE_FILES_ROOT}/$shiten_dir" ]; then
+            log_message "WARN" "$shiten_dir ディレクトリが見つかりません: ${SHAPE_FILES_ROOT}/$shiten_dir"
             continue
         fi
         
-        local mesh_number=$(basename "$mesh_dir")
-        local target_dir="${WORK_DIR}/${mesh_number}"
-        log_message "INFO" "シェープファイルを複写します: $mesh_dir -> $target_dir"
+        log_message "INFO" "ディレクトリを検索 : ${SHAPE_FILES_ROOT}/$shiten_dir"
+        log_message "DEBUG" "${SHAPE_FILES_ROOT}/$shiten_dir の内容:"
+        log_and_execute "ls -R \\"${SHAPE_FILES_ROOT}/$shiten_dir\\""
         
-        # ディレクトリ構造を作成
-        create_dir_if_not_exists "$target_dir"
-        
-        # findコマンドを構築
-        local find_command="find \"$mesh_dir\" -type f -regex \".*\.\(shp\|shx\|dbf\|prj\|fix\)$\" -exec cp {} \"$target_dir/\" \\;"
-        log_message "DEBUG" "find コマンドを実行: $find_command"
-        
-        # ファイルをコピー
-        if log_and_execute "$find_command"; then
-            log_message "INFO" "図面番号 ${mesh_number} のシェープファイルを正常に複写しました"
-            copy_success=true
+        # システムディレクトリを決定
+        local sys_dir
+        if [ "$shiten_dir" = "2080000" ] || [ "$shiten_dir" = "2090000" ]; then
+            sys_dir="sys08"
         else
-            log_message "ERROR" "図面番号 ${mesh_number} のシェープファイルの複写に失敗しました"
-            log_message "DEBUG" "失敗したディレクトリの内容:"
-            log_and_execute "ls -R \\"$mesh_dir\\""
+            sys_dir="sys09"
         fi
+        
+        # 図面番号ディレクトリを検索
+        for mesh_dir in "${SHAPE_FILES_ROOT}/$shiten_dir"/*; do
+            if [ ! -d "$mesh_dir" ]; then
+                log_message "DEBUG" "スキップされたディレクトリ: $mesh_dir"
+                continue
+            fi
+            
+            local mesh_number=$(basename "$mesh_dir")
+            
+            # メッシュ番号から大メッシュ、中メッシュ、小メッシュを抽出
+            local large_mesh=${mesh_number:0:3}
+            local medium_mesh=${mesh_number:3:2}
+            local small_mesh=${mesh_number:5:2}
+            
+            local target_dir="${WORK_DIR}/${sys_dir}/${large_mesh}/${medium_mesh}/${small_mesh}"
+            log_message "INFO" "シェープファイルを複写します: $mesh_dir -> $target_dir"
+            
+            # ディレクトリ構造を作成
+            create_dir_if_not_exists "$target_dir"
+            
+            # findコマンドを構築
+            local find_command="find \"$mesh_dir\" -type f -regex \".*\.\(shp\|shx\|dbf\|prj\|fix\)$\" -exec cp {} \"$target_dir/\" \\;"
+            log_message "DEBUG" "find コマンドを実行: $find_command"
+            
+            # ファイルをコピー
+            if log_and_execute "$find_command"; then
+                log_message "INFO" "図面番号 ${mesh_number} のシェープファイルを正常に複写しました"
+                copy_success=true
+            else
+                log_message "ERROR" "図面番号 ${mesh_number} のシェープファイルの複写に失敗しました"
+                log_message "DEBUG" "失敗したディレクトリの内容:"
+                log_and_execute "ls -R \\"$mesh_dir\\""
+            fi
+        done
     done
     
     if [ "$copy_success" = false ]; then
         log_message "ERROR" "シェープファイルの複写に失敗しました"
         return 1
     fi
+    
+    log_message "INFO" "シェープファイルの収集が完了しました"
+    return 0
 }
 
 # 更新メッシュファイルリスト作成

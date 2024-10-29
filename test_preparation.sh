@@ -55,7 +55,9 @@ TRANSFER_RESULT_FILE="$GYOMU_ROOT/$TRANSFER_RESULT_FILE"
 log_message "" "転送指示結果ファイルを作成します: $TRANSFER_RESULT_FILE"
 
 # 転送用圧縮ファイル格納フォルダ内のファイルを検索
-compressed_files=($(ls -t "$COMPRESSED_FILE_DIR"/*.tar.gz 2>/dev/null))
+shopt -s nullglob
+compressed_files=("$COMPRESSED_FILE_DIR"/*.tar.gz)
+shopt -u nullglob
 
 if [ ${#compressed_files[@]} -gt 0 ]; then
     # 転送指示結果ファイルを初期化
