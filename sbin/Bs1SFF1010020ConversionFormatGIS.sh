@@ -365,10 +365,9 @@ main() {
 
     log_message "INFO" "（8）転送指示結果ファイル存在チェック"
     if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
-        log_message "ERROR" "S1ZZZZW0002 ファイル未存在。$TRANSFER_RESULT_FILE"
-        log_message "INFO" "終了処理を開始します"
-        # ここで必要な終了処理を実行
-        exit 1
+        log_message "WARN" "S1ZZZZW0002 ファイル未存在。$TRANSFER_RESULT_FILE"
+        log_message "INFO" "転送指示結果ファイルが存在しないため、処理をスキップして正常終了します。"
+        exit 100  # 特別な終了コードを使用
     fi
 
     log_message "INFO" "（9）ファイル圧縮用ワークディレクトリ削除"
@@ -434,3 +433,4 @@ main() {
 
 # メインプロセスの実行（引数を渡す）
 main "$@"
+log_message "INFO" "スクリプトの実行が完了しました。"  # この行を追加

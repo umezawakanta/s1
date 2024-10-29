@@ -52,8 +52,11 @@ fi
 # 終了ステータスの処理
 if [ $EXIT_STATUS -eq 0 ]; then
     log_message "END" "$JOB_NAME が正常終了しました。終了ステータス: $EXIT_STATUS"
+    exit 0
+elif [ $EXIT_STATUS -eq 100 ]; then
+    log_message "END" "$JOB_NAME が正常終了しました（転送指示結果ファイルなし）。終了ステータス: $EXIT_STATUS"
+    exit 0
 else
     log_message "ERROR" "$JOB_NAME が異常終了しました。終了ステータス: $EXIT_STATUS"
+    exit 1
 fi
-
-exit $EXIT_STATUS
