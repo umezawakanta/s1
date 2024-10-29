@@ -365,7 +365,10 @@ main() {
 
     log_message "INFO" "（8）転送指示結果ファイル存在チェック"
     if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
-        log_message "WARN" "転送指示結果ファイルが存在しません: $TRANSFER_RESULT_FILE"
+        log_message "ERROR" "S1ZZZZW0002 ファイル未存在。$TRANSFER_RESULT_FILE"
+        log_message "INFO" "終了処理を開始します"
+        # ここで必要な終了処理を実行
+        exit 1
     fi
 
     log_message "INFO" "（9）ファイル圧縮用ワークディレクトリ削除"
