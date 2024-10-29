@@ -168,42 +168,44 @@ delete_shape_files() {
 backup_transferred_file() {
     log_message "INFO" "転送済みファイルのバックアップを開始します"
     
-    local backup_dir="${BACKUP_DIR}"
-    local timestamp=$(date +%Y%m%d%H%M%S)
-    local backup_file="${backup_dir}/B003KY_${timestamp}.tar.gz"
-    local transfer_result_backup="${backup_dir}/B003KyouyoTensoInfo.dat_${timestamp}"
-    
+    # 転送指示結果ファイルの内容を読み込む
+    if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
+        log_message "ERROR" "転送指示結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
+        return 1
+    fi
+
+    local file_content
+    file_content=$(cat "$TRANSFER_RESULT_FILE")
+    IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
+
+    # ステータスが転送済み（0）かチェック
+    if [ "$status" != "0" ]; then
+        log_message "INFO" "ファイルは転送済みではありません。バックアップをスキップします。"
+        return 0
+    fi
+
     # バックアップディレクトリの作成
+    local backup_dir="${BACKUP_DIR}"
     create_dir_if_not_exists "$backup_dir"
-    
-    # 転送用圧縮ファイルのバックアップ
-    if [ -f "$GIS_CHIKEI_TRANS_FILE" ]; then
-        if log_and_execute "cp \"$GIS_CHIKEI_TRANS_FILE\" \"$backup_file\""; then
-            log_message "INFO" "転送用圧縮ファイルをバックアップしました: $backup_file"
+
+    # リモートファイルをバックアップディレクトリに移動
+    if [ -f "$remote_file" ]; then
+        if mv "$remote_file" "$backup_dir/"; then
+            log_message "INFO" "転送済みファイルをバックアップしました: $remote_file -> $backup_dir/"
         else
-            log_message "ERROR" "転送用圧縮ファイルのバックアップに失敗しました"
+            log_message "ERROR" "転送済みファイルのバックアップに失敗しました: $remote_file"
             return 1
         fi
     else
-        log_message "WARN" "転送用圧縮ファイルが見つかりません: $GIS_CHIKEI_TRANS_FILE"
+        log_message "WARN" "バックアップ対象のファイルが見つかりません: $remote_file"
     fi
-    
-    # 転送指示結果ファイルのバックアップ
-    if [ -f "$TRANSFER_RESULT_FILE" ]; then
-        if log_and_execute "cp \"$TRANSFER_RESULT_FILE\" \"$transfer_result_backup\""; then
-            log_message "INFO" "転送指示結果ファイルをバックアップしました: $transfer_result_backup"
-        else
-            log_message "ERROR" "転送指示結果ファイルのバックアップに失敗しました"
-            return 1
-        fi
-    else
-        log_message "WARN" "転送指示結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
-    fi
-    
-    # 古いバックアップの削除（3世代より古いファイル）
-    local files_to_keep=6  # 2ファイル * 3世代
-    log_and_execute "ls -t \"$backup_dir\"/B003KY_*.tar.gz \"$backup_dir\"/B003KyouyoTensoInfo.dat_* 2>/dev/null | tail -n +$((files_to_keep + 1)) | xargs -r rm"
-    log_message "INFO" "3世代より古いバックアップを削除しました"
+
+    # 古いバックアップの削除（7日より古いディレクトリ）
+    find "$BACKUP_DIR" -type d -mtime +7 -exec rm -rf {} +
+    log_message "INFO" "7日より古いバックアップを削除しました"
+
+    log_message "INFO" "転送済みファイルのバックアップが完了しました"
+    return 0
 }
 
 # 転送指示結果ファイルの処理
@@ -383,10 +385,35 @@ main() {
 
     log_message "INFO" "（10）転送指示結果ファイル読込み"
     if [ -f "$TRANSFER_RESULT_FILE" ]; then
-        # ファイルの内容を読み込む処理をここに追加
-        log_message "INFO" "転送指示結果ファイルを読み込みました: $TRANSFER_RESULT_FILE"
+        # ファイルの内容を読み込む
+        local file_content
+        if file_content=$(cat "$TRANSFER_RESULT_FILE"); then
+            log_message "INFO" "転送指示結果ファイルを読み込みました: $TRANSFER_RESULT_FILE"
+            
+            # ファイルの内容を解析
+            IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
+            
+            log_message "DEBUG" "ファイル名: $file_name"
+            log_message "DEBUG" "更新日: $update_date"
+            log_message "DEBUG" "ローカルファイル: $local_file"
+            log_message "DEBUG" "リモートファイル: $remote_file"
+            log_message "DEBUG" "ステータス: $status"
+            log_message "DEBUG" "コメント: $comment"
+            log_message "DEBUG" "タイムスタンプ: $timestamp"
+            
+            # ステータスの確認
+            if [ "$status" = "0" ]; then
+                log_message "INFO" "転送済み（ステータス: $status）"
+            else
+                log_message "INFO" "未転送（ステータス: $status）"
+            fi
+        else
+            log_message "ERROR" "S1ZZZZE004 ファイルリードエラー: $TRANSFER_RESULT_FILE"
+            exit 9
+        fi
     else
-        log_message "WARN" "転送指示結果ファイルが存在しないため、読み込みをスキップします"
+        log_message "ERROR" "S1ZZZZE004 ファイルリードエラー: $TRANSFER_RESULT_FILE が存在しません"
+        exit 9
     fi
 
     log_message "INFO" "（11）転送済みファイルバックアップ"
