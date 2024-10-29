@@ -55,18 +55,25 @@ TRANSFER_RESULT_FILE="$GYOMU_ROOT/$TRANSFER_RESULT_FILE"
 log_message "" "転送指示結果ファイルを作成します: $TRANSFER_RESULT_FILE"
 
 # 転送用圧縮ファイル格納フォルダ内のファイルを検索
-latest_file=$(ls -t "$COMPRESSED_FILE_DIR"/*.tar.gz 2>/dev/null | head -n1)
+compressed_files=($(ls -t "$COMPRESSED_FILE_DIR"/*.tar.gz 2>/dev/null))
 
-if [ -n "$latest_file" ]; then
-    file_name=$(basename "$latest_file")
-    update_date=$(date -r "$latest_file" +%Y%m%d%H%M%S)
-    local_file="/sq5nas/data/recv/SQ500ES011/$file_name"
-    remote_file="$GYOMU_ROOT/FT/$file_name"
-    status="0"
-    comment="chikei"
-    timestamp="$update_date"
+if [ ${#compressed_files[@]} -gt 0 ]; then
+    # 転送指示結果ファイルを初期化
+    > "$TRANSFER_RESULT_FILE"
 
-    echo "$file_name,$update_date,$local_file,$remote_file,$status,$comment,$timestamp" > "$TRANSFER_RESULT_FILE"
+    for file in "${compressed_files[@]}"; do
+        file_name=$(basename "$file")
+        update_date=$(date -r "$file" +%Y%m%d%H%M%S)
+        local_file="/sq5nas/data/recv/SQ500ES011/$file_name"
+        remote_file="$GYOMU_ROOT/FT/$file_name"
+        status="0"
+        comment="chikei"
+        timestamp="$update_date"
+
+        echo "$file_name,$update_date,$local_file,$remote_file,$status,$comment,$timestamp" >> "$TRANSFER_RESULT_FILE"
+        log_message "INFO" "転送指示結果ファイルに追加しました: $file_name"
+    done
+
     log_message "INFO" "転送指示結果ファイルを作成しました: $TRANSFER_RESULT_FILE"
 else
     log_message "WARN" "転送用圧縮ファイルが見つかりません。サンプルデータを使用します。"

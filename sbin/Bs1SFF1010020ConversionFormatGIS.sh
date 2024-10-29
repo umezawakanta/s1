@@ -277,18 +277,19 @@ update_transfer_instruction_info() {
     log_message "INFO" "ステータス: $status"
     log_message "DEBUG" "修正後のタイムスタンプ: $timestamp"
 
-    # ステータスが「0：正常終了」以外かチェック
+    # ステータスが「0：転送済み」以外かチェック
     if [ "$status" != "0" ]; then
-        log_message "INFO" "ステータスが正常終了以外です。転送指示情報ファイルを更新します"
+        log_message "INFO" "ステータスが転送済み以外です。転送指示情報ファイルを更新します"
         
         # 新しい行を作成
-        local new_line="$file_name,$update_date,$local_file,$remote_file,$status,$comment,$timestamp"
+        # 転送指示情報ファイルのステータスは0固定
+        local new_line="$file_name,$update_date,$local_file,$remote_file,0,$comment,$timestamp"
         
         # 転送指示情報ファイルを更新
         echo "$new_line" > "$TRANSFER_INFO_FILE"
         log_message "INFO" "転送指示情報ファイルを更新しました: $TRANSFER_INFO_FILE"
     else
-        log_message "INFO" "ステータスが正常終了です。転送指示情報ファイルの更新はスキップします"
+        log_message "INFO" "ステータスが転送済みです。転送指示情報ファイルの更新はスキップします"
     fi
 
     log_message "INFO" "転送指示情報の更新処理が完了しました"
