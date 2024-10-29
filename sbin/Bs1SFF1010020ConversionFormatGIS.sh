@@ -168,37 +168,35 @@ delete_shape_files() {
 backup_transferred_file() {
     log_message "INFO" "転送済みファイルのバックアップを開始します"
     
-    # 転送指示結果ファイルの内容を読み込む
+    # 転送指示結果ファイルの存在確認
     if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
         log_message "ERROR" "転送指示結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
         return 1
-    fi
-
-    local file_content
-    file_content=$(cat "$TRANSFER_RESULT_FILE")
-    IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
-
-    # ステータスが転送済み（0）かチェック
-    if [ "$status" != "0" ]; then
-        log_message "INFO" "ファイルは転送済みではありません。バックアップをスキップします。"
-        return 0
     fi
 
     # バックアップディレクトリの作成
     local backup_dir="${BACKUP_DIR}"
     create_dir_if_not_exists "$backup_dir"
 
-    # リモートファイルをバックアップディレクトリに移動
-    if [ -f "$remote_file" ]; then
-        if mv "$remote_file" "$backup_dir/"; then
-            log_message "INFO" "転送済みファイルをバックアップしました: $remote_file -> $backup_dir/"
-        else
-            log_message "ERROR" "転送済みファイルのバックアップに失敗しました: $remote_file"
-            return 1
+    # 転送指示結果ファイルを1行ずつ処理
+    while IFS=',' read -r file_name update_date local_file remote_file status comment timestamp || [ -n "$file_name" ]; do
+        # ステータスが転送済み（0）かチェック
+        if [ "$status" != "0" ]; then
+            log_message "INFO" "ファイルは転送済みではありません。スキップします: $file_name"
+            continue
         fi
-    else
-        log_message "WARN" "バックアップ対象のファイルが見つかりません: $remote_file"
-    fi
+
+        # リモートファイルをバックアップディレクトリに移動
+        if [ -f "$remote_file" ]; then
+            if mv "$remote_file" "$backup_dir/"; then
+                log_message "INFO" "転送済みファイルをバックアップしました: $remote_file -> $backup_dir/"
+            else
+                log_message "ERROR" "転送済みファイルのバックアップに失敗しました: $remote_file"
+            fi
+        else
+            log_message "WARN" "バックアップ対象のファイルが見つかりません: $remote_file"
+        fi
+    done < "$TRANSFER_RESULT_FILE"
 
     # 3世代より古いバックアップの削除
     local backup_files=("$BACKUP_DIR"/*.tar.gz)
@@ -211,7 +209,6 @@ backup_transferred_file() {
     fi
 
     log_message "INFO" "バックアップを3世代まで保持しました"
-
     log_message "INFO" "転送済みファイルのバックアップが完了しました"
     return 0
 }
