@@ -263,30 +263,34 @@ update_transfer_instruction_info() {
     log_message "DEBUG" "転送指示結果ファイルの内容:"
     log_and_execute "cat \"$TRANSFER_RESULT_FILE\""
 
-    # 転送指示結果ファイルの最後の行を読み込む
-    local last_line=$(tail -n 1 "$TRANSFER_RESULT_FILE")
-    
-    IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$last_line"
-    
-    # タイムスタンプの修正
-    timestamp=$(echo "$timestamp" | cut -c 1-14)
-    
-    log_message "INFO" "ステータス: $status"
-    log_message "DEBUG" "修正後のタイムスタンプ: $timestamp"
+    # 転送指示情報ファイルを初期化
+    > "$TRANSFER_INFO_FILE"
 
-    # ステータスが「0：転送済み」以外かチェック
-    if [ "$status" != "0" ]; then
-        log_message "INFO" "ステータスが転送済み以外です。転送指示情報ファイルを更新します"
+    # 転送指示結果ファイルを1行ずつ処理
+    while IFS=',' read -r file_name update_date local_file remote_file status comment timestamp || [ -n "$file_name" ]; do
+        # タイムスタンプの修正
+        timestamp=$(echo "$timestamp" | cut -c 1-14)
         
-        # 新しい行を作成
-        # 転送指示情報ファイルのステータスは0固定
-        local new_line="$file_name,$update_date,$local_file,$remote_file,0,$comment,$timestamp"
-        
-        # 転送指示情報ファイルを更新
-        echo "$new_line" > "$TRANSFER_INFO_FILE"
-        log_message "INFO" "転送指示情報ファイルを更新しました: $TRANSFER_INFO_FILE"
+        # ステータスが「0：転送済み」以外かチェック
+        if [ "$status" != "0" ]; then
+            log_message "INFO" "ステータスが転送済み以外です。転送指示情報ファイルに追加します"
+            
+            # 新しい行を作成
+            # 転送指示情報ファイルのステータスは0固定
+            local new_line="$file_name,$update_date,$local_file,$remote_file,0,$comment,$timestamp"
+            
+            # 転送指示情報ファイルに追加
+            echo "$new_line" >> "$TRANSFER_INFO_FILE"
+            log_message "INFO" "転送指示情報ファイルに追加しました: $file_name"
+        else
+            log_message "INFO" "ステータスが転送済みです。このファイルはスキップします: $file_name"
+        fi
+    done < "$TRANSFER_RESULT_FILE"
+
+    if [ -s "$TRANSFER_INFO_FILE" ]; then
+        log_message "INFO" "転送指示情報ファイルが更新されました: $TRANSFER_INFO_FILE"
     else
-        log_message "INFO" "ステータスが転送済みです。転送指示情報ファイルの更新はスキップします"
+        log_message "INFO" "転送指示情報ファイルの更新はありませんでした"
     fi
 
     log_message "INFO" "転送指示情報の更新処理が完了しました"
