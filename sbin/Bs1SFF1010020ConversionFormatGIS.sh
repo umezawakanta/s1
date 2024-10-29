@@ -72,7 +72,7 @@ collect_shape_files() {
     log_message "DEBUG" "SHAPE_FILES_ROOT の内容:"
     log_and_execute "ls -R \"${SHAPE_FILES_ROOT}\""
     
-    # 図郭番号ディレクトリを検索
+    # 図面番号ディレクトリを検索
     for mesh_dir in "${SHAPE_FILES_ROOT}/2010000"/*; do
         if [ ! -d "$mesh_dir" ]; then
             log_message "DEBUG" "スキップされたディレクトリ: $mesh_dir"
@@ -92,10 +92,10 @@ collect_shape_files() {
         
         # ファイルをコピー
         if log_and_execute "$find_command"; then
-            log_message "INFO" "図郭番号 ${mesh_number} のシェープファイルを正常に複写しました"
+            log_message "INFO" "図面番号 ${mesh_number} のシェープファイルを正常に複写しました"
             copy_success=true
         else
-            log_message "ERROR" "図郭番号 ${mesh_number} のシェープファイルの複写に失敗しました"
+            log_message "ERROR" "図面番号 ${mesh_number} のシェープファイルの複写に失敗しました"
             log_message "DEBUG" "失敗したディレクトリの内容:"
             log_and_execute "ls -R \\"$mesh_dir\\""
         fi
@@ -117,8 +117,8 @@ create_update_mesh_list() {
     log_message "INFO" "更新メッシュファイルリストを初期化"
     log_and_execute ": > \"$UPDATE_MESH_LIST\""
     
-    # 各図郭番号のディレクトリをループ
-    log_message "INFO" "各図郭番号のディレクトリをループ"
+    # 各図面番号のディレクトリをループ
+    log_message "INFO" "各図面番号のディレクトリをループ"
     local list_created=false
     for mesh_dir in "${WORK_DIR}"/*; do
         if [ -d "$mesh_dir" ]; then
@@ -256,23 +256,27 @@ update_transfer_instruction_info() {
     log_message "DEBUG" "転送指示結果ファイルの内容:"
     log_and_execute "cat \"$TRANSFER_RESULT_FILE\""
 
-    # 転送指示結果ファイルの内容を読み込む
-    local file_content=$(cat "$TRANSFER_RESULT_FILE")
-    IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
+    # 転送指示結果ファイルの最後の行を読み込む
+    local last_line=$(tail -n 1 "$TRANSFER_RESULT_FILE")
+    
+    IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$last_line"
+    
+    # タイムスタンプの修正
+    timestamp=$(echo "$timestamp" | cut -c 1-14)
     
     log_message "INFO" "ステータス: $status"
+    log_message "DEBUG" "修正後のタイムスタンプ: $timestamp"
 
     # ステータスが「0：正常終了」以外かチェック
     if [ "$status" != "0" ]; then
         log_message "INFO" "ステータスが正常終了以外です。転送指示情報ファイルを更新します"
         
-        # 転送指示結果ファイルの内容を転送指示情報ファイルに転記
-        if log_and_execute "cp \"$TRANSFER_RESULT_FILE\" \"$TRANSFER_INFO_FILE\""; then
-            log_message "INFO" "転送指示情報ファイルを更新しました: $TRANSFER_INFO_FILE"
-        else
-            log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
-            return 1
-        fi
+        # 新しい行を作成
+        local new_line="$file_name,$update_date,$local_file,$remote_file,$status,$comment,$timestamp"
+        
+        # 転送指示情報ファイルを更新
+        echo "$new_line" > "$TRANSFER_INFO_FILE"
+        log_message "INFO" "転送指示情報ファイルを更新しました: $TRANSFER_INFO_FILE"
     else
         log_message "INFO" "ステータスが正常終了です。転送指示情報ファイルの更新はスキップします"
     fi
@@ -282,12 +286,19 @@ update_transfer_instruction_info() {
 
 # メインプロセス
 main() {
+    # 初期化エラーをキャッチするための一時的なログ関数
+    temp_log() {
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [$1] $2"
+    }
+
+    temp_log "INFO" "（1）起動引数の個数チェック"
     # コンフィグファイルのパスを引数から取得
     if [ $# -eq 0 ]; then
         echo "エラー: コンフィグファイルのパスが指定されていません"
         exit 1
     fi
 
+    temp_log "INFO" "（2）設定パラメータ設定"
     SHELL_PRM_FILE_PATH="$1"
     if [ ! -f "$SHELL_PRM_FILE_PATH" ]; then
         echo "エラー: コンフィグファイル $SHELL_PRM_FILE_PATH が存在しません"
@@ -297,6 +308,11 @@ main() {
     # コンフィグファイルの読み込み
     source "$SHELL_PRM_FILE_PATH"
 
+    log_message "INFO" "（3）バッチ処理共通定義の読み込み"
+    # バッチ処理共通定義ファイルのパスを設定
+    ${GYOMU_ROOT}/config/Bs1SFF1010020CommonDef.sh
+
+    log_message "INFO" "（4）環境情報ファイルの存在チェック"
     # 必須パラメータの確認
     required_params=(
         "LOG_FILE" "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
@@ -309,6 +325,7 @@ main() {
             exit 1
         fi
     done
+    log_message "INFO" "（5）環境情報ファイルの読み込み"
 
     # GYOMU_ROOTが相対パスの場合、絶対パスに変換
     if [[ "$GYOMU_ROOT" != /* ]]; then
@@ -326,10 +343,10 @@ main() {
     GIS_CHIKEI_TRANS_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_FILE"
     BACKUP_DIR="$GYOMU_ROOT/$BACKUP_DIR"
 
+    log_message "INFO" "環境情報ファイルを読み込みました: $SHELL_PRM_FILE_PATH"
+
     # ログファイルのディレクトリを作成
     create_dir_if_not_exists "$(dirname "$LOG_FILE")"
-    log_message "INFO" "ファイル処理を開始します"
-    log_message "INFO" "コンフィグファイルを読み込みました: $SHELL_PRM_FILE_PATH"
 
     # 処理の実行
     collect_shape_files || log_message "ERROR" "シェープファイルの収集に失敗しました"
