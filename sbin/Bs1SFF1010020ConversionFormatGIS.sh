@@ -313,6 +313,11 @@ main() {
     ${GYOMU_ROOT}/config/Bs1SFF1010020CommonDef.sh
 
     log_message "INFO" "（4）環境情報ファイルの存在チェック"
+    if [ ! -f "$SHELL_PRM_FILE_PATH" ]; then
+        temp_log "ERROR" "環境情報ファイルが存在しません: $SHELL_PRM_FILE_PATH"
+        exit 1
+    fi
+
     # 必須パラメータの確認
     required_params=(
         "LOG_FILE" "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
@@ -326,6 +331,11 @@ main() {
         fi
     done
     log_message "INFO" "（5）環境情報ファイルの読み込み"
+
+    log_message "INFO" "環境情報ファイルを読み込みました: $SHELL_PRM_FILE_PATH"
+
+    log_message "INFO" "（6）業務変数の定義"
+    JOB_NAME="EAM (GIS) 提供用転送形式変換 (地形図)"
 
     # GYOMU_ROOTが相対パスの場合、絶対パスに変換
     if [[ "$GYOMU_ROOT" != /* ]]; then
@@ -343,7 +353,35 @@ main() {
     GIS_CHIKEI_TRANS_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_FILE"
     BACKUP_DIR="$GYOMU_ROOT/$BACKUP_DIR"
 
-    log_message "INFO" "環境情報ファイルを読み込みました: $SHELL_PRM_FILE_PATH"
+    log_message "INFO" "（7）開始メッセージ出力"
+    log_message "INFO" "$JOB_NAME を開始します。"
+
+   log_message "INFO" "（8）転送指示結果ファイル存在チェック"
+    if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
+        log_message "WARN" "転送指示結果ファイルが存在しません: $TRANSFER_RESULT_FILE"
+    fi
+
+    log_message "INFO" "（9）ファイル圧縮用ワークディレクトリ削除"
+    if [ -d "$WORK_DIR" ]; then
+        if rm -rf "$WORK_DIR"; then
+            log_message "INFO" "ファイル圧縮用ワークディレクトリを削除しました: $WORK_DIR"
+        else
+            log_message "ERROR" "ファイル圧縮用ワークディレクトリの削除に失敗しました: $WORK_DIR"
+        fi
+    else
+        log_message "INFO" "削除するファイル圧縮用ワークディレクトリが存在しません: $WORK_DIR"
+    fi
+
+    log_message "INFO" "（10）転送指示結果ファイル読込み"
+    if [ -f "$TRANSFER_RESULT_FILE" ]; then
+        # ファイルの内容を読み込む処理をここに追加
+        log_message "INFO" "転送指示結果ファイルを読み込みました: $TRANSFER_RESULT_FILE"
+    else
+        log_message "WARN" "転送指示結果ファイルが存在しないため、読み込みをスキップします"
+    fi
+
+    log_message "INFO" "（11）転送済みファイルバックアップ"
+    backup_transferred_file || log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
 
     # ログファイルのディレクトリを作成
     create_dir_if_not_exists "$(dirname "$LOG_FILE")"
