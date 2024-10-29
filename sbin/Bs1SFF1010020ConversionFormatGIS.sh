@@ -63,7 +63,7 @@ collect_shape_files() {
     local copy_success=false
     
     # 支店番号ディレクトリを検索
-    local shiten_dirs=(2010000 2020000 2030000 2040000 2050000 2060000 2070000 2140000)
+    local shiten_dirs=(2010000 2020000 2030000 2040000 2050000 2060000 2070000 2080000 2090000 2140000)
     
     for shiten_dir in "${shiten_dirs[@]}"; do
         if [ ! -d "${SHAPE_FILES_ROOT}/$shiten_dir" ]; then
@@ -73,7 +73,7 @@ collect_shape_files() {
         
         log_message "INFO" "ディレクトリを検索 : ${SHAPE_FILES_ROOT}/$shiten_dir"
         log_message "DEBUG" "${SHAPE_FILES_ROOT}/$shiten_dir の内容:"
-        log_and_execute "ls -R \\"${SHAPE_FILES_ROOT}/$shiten_dir\\""
+        log_and_execute "ls -R \"${SHAPE_FILES_ROOT}/$shiten_dir\""
         
         # システムディレクトリを決定
         local sys_dir
