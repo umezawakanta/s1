@@ -200,9 +200,17 @@ backup_transferred_file() {
         log_message "WARN" "バックアップ対象のファイルが見つかりません: $remote_file"
     fi
 
-    # 古いバックアップの削除（7日より古いディレクトリ）
-    find "$BACKUP_DIR" -type d -mtime +7 -exec rm -rf {} +
-    log_message "INFO" "7日より古いバックアップを削除しました"
+    # 3世代より古いバックアップの削除
+    local backup_files=("$BACKUP_DIR"/*.tar.gz)
+    if [ ${#backup_files[@]} -gt 3 ]; then
+        IFS=$'\n' sorted_files=($(ls -t "${backup_files[@]}"))
+        for old_file in "${sorted_files[@]:3}"; do
+            rm "$old_file"
+            log_message "INFO" "古いバックアップを削除しました: $old_file"
+        done
+    fi
+
+    log_message "INFO" "バックアップを3世代まで保持しました"
 
     log_message "INFO" "転送済みファイルのバックアップが完了しました"
     return 0
