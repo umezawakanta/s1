@@ -70,7 +70,7 @@ collect_shape_files() {
     
     log_message "INFO" "ディレクトリを検索 : ${SHAPE_FILES_ROOT}/2010000"
     log_message "DEBUG" "SHAPE_FILES_ROOT の内容:"
-    log_and_execute "ls -R \\"${SHAPE_FILES_ROOT}\\""
+    log_and_execute "ls -R \"${SHAPE_FILES_ROOT}\""
     
     # 図郭番号ディレクトリを検索
     for mesh_dir in "${SHAPE_FILES_ROOT}/2010000"/*; do
@@ -219,20 +219,18 @@ process_transfer_instruction_result() {
     log_and_execute "cat \"$TRANSFER_RESULT_FILE\""
 
     # 転送指示結果ファイルの読み込み
-    local return_code=$(grep -oP '(?<=リターンコード=)\\d+' "$TRANSFER_RESULT_FILE")
-    
-    if [ -z "$return_code" ]; then
-        log_message "ERROR" "転送指示結果ファイルからリターンコードを読み取れませんでした"
-        return 1
-    fi
+    local file_content=$(cat "$TRANSFER_RESULT_FILE")
+    IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
 
-    log_message "DEBUG" "読み取ったリターンコード: $return_code"
+    log_message "DEBUG" "ファイル名: $file_name"
+    log_message "DEBUG" "更新日: $update_date"
+    log_message "DEBUG" "ステータス: $status"
 
-    # リターンコードの確認
-    if [ "$return_code" -eq 0 ]; then
-        log_message "INFO" "転送が正常に完了しました（リターンコード: $return_code）"
+    # ステータスの確認
+    if [ "$status" = "0" ]; then
+        log_message "INFO" "転送が正常に完了しました（ステータス: $status）"
     else
-        log_message "ERROR" "転送中にエラーが発生しました（リターンコード: $return_code）"
+        log_message "ERROR" "転送中にエラーが発生しました（ステータス: $status）"
     fi
 
     # 転送指示結果ファイルの削除
@@ -259,18 +257,14 @@ update_transfer_instruction_info() {
     log_and_execute "cat \"$TRANSFER_RESULT_FILE\""
 
     # 転送指示結果ファイルの内容を読み込む
-    local status=$(grep -oP '(?<=status,)\\d+' "$TRANSFER_RESULT_FILE")
+    local file_content=$(cat "$TRANSFER_RESULT_FILE")
+    IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
     
-    log_message "INFO" "status : $status"
+    log_message "INFO" "ステータス: $status"
 
-    if [ -z "$status" ]; then
-        log_message "ERROR" "転送指示結果ファイルからステータスを読み取れませんでした"
-        return 1
-    fi
-
-    # ステータスが「1：連携済み」以外かチェック
-    if [ "$status" != "1" ]; then
-        log_message "INFO" "ステータスが連携済み以外です。転送指示情報ファイルを更新します"
+    # ステータスが「0：正常終了」以外かチェック
+    if [ "$status" != "0" ]; then
+        log_message "INFO" "ステータスが正常終了以外です。転送指示情報ファイルを更新します"
         
         # 転送指示結果ファイルの内容を転送指示情報ファイルに転記
         if log_and_execute "cp \"$TRANSFER_RESULT_FILE\" \"$TRANSFER_INFO_FILE\""; then
@@ -280,10 +274,10 @@ update_transfer_instruction_info() {
             return 1
         fi
     else
-        log_message "INFO" "ステータスが連携済みです。転送指示情報ファイルの更新はスキップします"
+        log_message "INFO" "ステータスが正常終了です。転送指示情報ファイルの更新はスキップします"
     fi
 
-    log_message  "INFO" "転送指示情報の更新処理が完了しました"
+    log_message "INFO" "転送指示情報の更新処理が完了しました"
 }
 
 # メインプロセス
@@ -342,7 +336,7 @@ main() {
     create_update_mesh_list || log_message "ERROR" "更新メッシュファイルリストの作成に失敗しました"
     create_transfer_compressed_file || log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
     backup_transferred_file || log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
-    process_transfer_instruction_result || log_message "ERROR" "転送指示結果ファイルの処理に失敗しました"
+    # process_transfer_instruction_result || log_message "ERROR" "転送指示結果ファイルの処理に失敗しました"
     update_transfer_instruction_info || log_message "ERROR" "転送指示情報の更新に失敗しました"
     # delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
     
