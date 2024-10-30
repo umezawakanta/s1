@@ -62,6 +62,11 @@ collect_shape_files() {
     
     local copy_success=false
     
+    # 更新メッシュファイルリストを初期化
+    log_message "INFO" "更新メッシュファイルリストを初期化"
+    create_dir_if_not_exists "$(dirname "$UPDATE_MESH_LIST")"
+    log_and_execute ": > \"$UPDATE_MESH_LIST\""
+    
     # 支店番号ディレクトリを検索
     local shiten_dirs=(2010000 2020000 2030000 2040000 2050000 2060000 2070000 2080000 2090000 2140000)
     
@@ -110,6 +115,9 @@ collect_shape_files() {
             # ファイルをコピー
             if log_and_execute "$find_command"; then
                 log_message "INFO" "図面番号 ${mesh_number} のシェープファイルを正常に複写しました"
+                # 更新メッシュファイルリストに図面番号を追加
+                log_and_execute "echo \"${mesh_number}\" >> \"$UPDATE_MESH_LIST\""
+                log_message "DEBUG" "更新メッシュファイルリストに追加: $mesh_number"
                 copy_success=true
             else
                 log_message "ERROR" "図面番号 ${mesh_number} のシェープファイルの複写に失敗しました"
@@ -118,6 +126,14 @@ collect_shape_files() {
             fi
         done
     done
+    
+    # 更新メッシュファイルリストの確認
+    if [ -s "$UPDATE_MESH_LIST" ]; then
+        log_message "INFO" "更新メッシュファイルリストを作成しました: $UPDATE_MESH_LIST"
+    else
+        log_message "ERROR" "更新メッシュファイルリストが空です"
+        return 1
+    fi
     
     if [ "$copy_success" = false ]; then
         log_message "ERROR" "シェープファイルの複写に失敗しました"
@@ -130,31 +146,9 @@ collect_shape_files() {
 
 # 更新メッシュファイルリスト作成
 create_update_mesh_list() {
-    log_message "INFO" "更新メッシュファイルリストを作成中"
+    log_message "INFO" "作成した更新メッシュリストから重複した図面番号を削除してソートする"
     
-    create_dir_if_not_exists "$(dirname "$UPDATE_MESH_LIST")"
-    
-    # 更新メッシュファイルリストを初期化
-    log_message "INFO" "更新メッシュファイルリストを初期化"
-    log_and_execute ": > \"$UPDATE_MESH_LIST\""
-    
-    # 各図面番号のディレクトリをループ
-    log_message "INFO" "各図面番号のディレクトリをループ"
-    local list_created=false
-    for mesh_dir in "${WORK_DIR}"/*; do
-        if [ -d "$mesh_dir" ]; then
-            mesh_number=$(basename "$mesh_dir")
-            log_and_execute "echo \"${mesh_number}\" >> \"$UPDATE_MESH_LIST\""
-            list_created=true
-        fi
-    done
-    
-    if [ "$list_created" = true ]; then
-        log_message "INFO" "更新メッシュファイルリストを作成しました: $UPDATE_MESH_LIST"
-    else
-        log_message "ERROR" "更新メッシュファイルリストが空です"
-        return 1
-    fi
+    # 作成した更新メッシュリストから重複した図面番号を削除してソートする
 }
 
 # 転送用圧縮ファイルの作成
