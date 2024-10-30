@@ -1,30 +1,72 @@
+#=========================================
 # JP1ジョブの設定
+#=========================================
 JP1_HOSTNAME=myhost
 JP1_JOBNAME=MyJob
+JP1_GROUP=GIS_GROUP
+JP1_UNIT_NAME=CHIKEI_CONV
 
+#=========================================
 # スクリプトのパス
+#=========================================
 STARTER_SCRIPT=sbin/starter.sh
 EXECUTOR_SCRIPT=sbin/file_processor.sh
+COMMON_DEF_SCRIPT=config/Bs1SFF1010020CommonDef.sh
 
-# ログファイルのパス
+#=========================================
+# タイムアウトと再試行の設定
+#=========================================
+TIMEOUT=3600          # 実行タイムアウト（秒）
+MAX_RETRIES=3         # 最大再試行回数
+RETRY_INTERVAL=300    # 再試行間隔（秒）
 
-# その他の設定
-TIMEOUT=3600
-MAX_RETRIES=3
-
+#=========================================
+# 基本パス設定
+#=========================================
 #GYOMU_ROOT=/sxhome/filechg/GIS/CHIKEI
 GYOMU_ROOT=.
 
-# File paths
+#=========================================
+# ログ設定
+#=========================================
+LOG_DIR=log
+LOG_FILE=$LOG_DIR/process.log
+LOG_LEVEL=INFO       # ログレベル（DEBUG/INFO/WARN/ERROR）
+LOG_MAX_SIZE=10M     # ログファイルの最大サイズ
+LOG_BACKUP_COUNT=5   # 保持する古いログファイルの数
+
+#=========================================
+# ファイルパス設定
+#=========================================
+# 基本ファイル名
+GIS_CHIKEI_TRANS_FILE=B003KyouyoTensoinfo.dat
+
+# ディレクトリパス
 SHAPE_FILES_ROOT=shape
 WORK_DIR=shape/comp_work
-UPDATE_MESH_LIST=$WORK_DIR/B003KY_UpdateMeshList.csv
-TRANSFER_RESULT_FILE=result/B003KyouyoTensoinfo.dat
-TRANSFER_INFO_FILE=inf/B003KyouyoTensoinfo.dat
-GIS_CHIKEI_TRANS_FILE=FT/B003KY_$(date +%Y%m%d%H%M%S).tar.gz
-
-# Backup directory
+RESULT_DIR=result
+INF_DIR=inf
+FT_DIR=FT
 BACKUP_DIR=back
 
-# 圧縮ファイル名のフォーマット
+# ファイルパス（変数展開使用）
+UPDATE_MESH_LIST=$WORK_DIR/B003KY_UpdateMeshList.csv
+TRANSFER_RESULT_FILE=$RESULT_DIR/${GIS_CHIKEI_TRANS_FILE}
+TRANSFER_INFO_FILE=$INF_DIR/${GIS_CHIKEI_TRANS_FILE}
+
+# 動的なファイル名（日付使用）
+GIS_CHIKEI_TRANS_COMP_FILE=$FT_DIR/B003KY_$(date +%Y%m%d%H%M%S).tar.gz
 COMPRESSED_FILE_FORMAT="B003KY_%Y%m%d%H%M%S.tar.gz"
+
+#=========================================
+# バックアップ設定
+#=========================================
+BACKUP_GENERATIONS=3  # バックアップの世代数
+BACKUP_FILE_PREFIX=B003KY_
+BACKUP_RESULT_PREFIX=B003KY_転送指示結果ファイル_
+
+#=========================================
+# その他の設定
+#=========================================
+FILE_PATTERN="*.tar.gz"
+TIMESTAMP_FORMAT="%Y%m%d%H%M%S"

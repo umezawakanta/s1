@@ -58,7 +58,7 @@ if [[ "$GYOMU_ROOT" != /* ]]; then
 fi
 
 # 転送用圧縮ファイル格納フォルダのパスを設定
-COMPRESSED_FILE_DIR="$GYOMU_ROOT/$(dirname "$GIS_CHIKEI_TRANS_FILE")"
+COMPRESSED_FILE_DIR="$GYOMU_ROOT/$(dirname "$GIS_CHIKEI_TRANS_COMP_FILE")"
 
 # 転送指示結果ファイルの作成
 TRANSFER_RESULT_FILE="$GYOMU_ROOT/$TRANSFER_RESULT_FILE"

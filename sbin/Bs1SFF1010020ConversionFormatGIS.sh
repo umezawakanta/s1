@@ -5,7 +5,7 @@ set -u  # 未定義の変数を参照した場合にエラーを発生
 
 # グローバル変数
 COMPRESSED_FILE=""
-GIS_CHIKEI_TRANS_FILE=""
+GIS_CHIKEI_TRANS_COMP_FILE=""
 ERROR_COUNT=0
 
 # メッセージをログに記録する関数
@@ -191,7 +191,7 @@ create_update_mesh_list() {
 # 転送用圧縮ファイルの作成
 create_transfer_compressed_file() {
     log_message "INFO" "転送用圧縮ファイルを作成中"
-    create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_FILE")"
+    create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_COMP_FILE")"
     
     # 現在のディレクトリを保存
     local current_dir=$(pwd)
@@ -199,8 +199,8 @@ create_transfer_compressed_file() {
     # WORK_DIRに移動してtar作成
     cd "$WORK_DIR" || return 1
     
-    if log_and_execute "tar -czf \"$GIS_CHIKEI_TRANS_FILE\" *"; then
-        log_message "INFO" "転送用圧縮ファイルを作成しました: $GIS_CHIKEI_TRANS_FILE"
+    if log_and_execute "tar -czf \"$GIS_CHIKEI_TRANS_COMP_FILE\" *"; then
+        log_message "INFO" "転送用圧縮ファイルを作成しました: $GIS_CHIKEI_TRANS_COMP_FILE"
         cd "$current_dir" || return 1
         return 0
     else
@@ -243,7 +243,7 @@ backup_transferred_file() {
 
     # 転送指示結果ファイルのバックアップ名を生成（日付サフィックス付き）
     local current_date=$(date +%Y%m%d%H%M%S)
-    local result_backup_name="B003KyouyoTensoinfo.dat_${current_date}"
+    local result_backup_name="${GIS_CHIKEI_TRANS_FILE}_${current_date}"
     
     # 転送指示結果ファイルをバックアップ
     if cp "$TRANSFER_RESULT_FILE" "$backup_dir/$result_backup_name"; then
@@ -288,7 +288,7 @@ backup_transferred_file() {
     fi
 
     # 転送指示結果ファイルのバックアップ
-    local result_backup_files=("$BACKUP_DIR"/B003KyouyoTensoinfo.dat_*)
+    local result_backup_files=("$BACKUP_DIR"/${GIS_CHIKEI_TRANS_FILE}_*)
     if [ ${#result_backup_files[@]} -gt 3 ]; then
         IFS=$'\n' sorted_result_files=($(ls -t "${result_backup_files[@]}"))
         for old_file in "${sorted_result_files[@]:3}"; do
@@ -390,14 +390,14 @@ update_transfer_instruction_info_after() {
     log_message "INFO" "転送指示情報の更新処理を開始します"
 
     # 転送用圧縮ファイルの存在確認
-    if [ ! -f "$GIS_CHIKEI_TRANS_FILE" ]; then
-        log_message "ERROR" "転送用圧縮ファイルが見つかりません: $GIS_CHIKEI_TRANS_FILE"
+    if [ ! -f "$GIS_CHIKEI_TRANS_COMP_FILE" ]; then
+        log_message "ERROR" "転送用圧縮ファイルが見つかりません: $GIS_CHIKEI_TRANS_COMP_FILE"
         return 1
     fi
 
     # 転送用圧縮ファイル名から情報を抽出
-    local file_name=$(basename "$GIS_CHIKEI_TRANS_FILE")
-    local timestamp=$(date -r "$GIS_CHIKEI_TRANS_FILE" +%Y%m%d%H%M%S)
+    local file_name=$(basename "$GIS_CHIKEI_TRANS_COMP_FILE")
+    local timestamp=$(date -r "$GIS_CHIKEI_TRANS_COMP_FILE" +%Y%m%d%H%M%S)
     
     log_message "DEBUG" "ファイル名: $file_name"
     log_message "DEBUG" "タイムスタンプ: $timestamp"
@@ -470,7 +470,7 @@ main() {
     # 必須パラメータの確認
     required_params=(
         "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
-        "TRANSFER_RESULT_FILE" "TRANSFER_INFO_FILE" "GIS_CHIKEI_TRANS_FILE"
+        "TRANSFER_RESULT_FILE" "TRANSFER_INFO_FILE" "GIS_CHIKEI_TRANS_COMP_FILE"
         "BACKUP_DIR" "GYOMU_ROOT"
     )
     for param in "${required_params[@]}"; do
@@ -493,7 +493,7 @@ main() {
     UPDATE_MESH_LIST="$GYOMU_ROOT/$UPDATE_MESH_LIST"
     TRANSFER_RESULT_FILE="$GYOMU_ROOT/$TRANSFER_RESULT_FILE"
     TRANSFER_INFO_FILE="$GYOMU_ROOT/$TRANSFER_INFO_FILE"
-    GIS_CHIKEI_TRANS_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_FILE"
+    GIS_CHIKEI_TRANS_COMP_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_FILE"
     BACKUP_DIR="$GYOMU_ROOT/$BACKUP_DIR"
 
 
