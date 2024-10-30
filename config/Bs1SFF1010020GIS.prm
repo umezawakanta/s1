@@ -43,8 +43,8 @@ BACKUP_DIR=back
 
 # ファイルパス（変数展開使用）
 UPDATE_MESH_LIST=$WORK_DIR/B003KY_UpdateMeshList.csv
-TRANSFER_RESULT_FILE=$RESULT_DIR/$GIS_CHIKEI_TRANS_FILE
 GIS_CHIKEI_TRANS_INFO_FILE=$INF_DIR/$GIS_CHIKEI_TRANS_FILE
+GIS_CHIKEI_TRANS_RESULT_FILE=$RESULT_DIR/$GIS_CHIKEI_TRANS_FILE
 
 # 動的なファイル名（日付使用）
 GIS_CHIKEI_TRANS_COMP_FILE=$FT_DIR/B003KY_$(date +%Y%m%d%H%M%S).tar.gz
@@ -55,7 +55,7 @@ COMPRESSED_FILE_FORMAT="B003KY_%Y%m%d%H%M%S.tar.gz"
 #=========================================
 BACKUP_GENERATIONS=3  # バックアップの世代数
 BACKUP_FILE_PREFIX=B003KY_
-BACKUP_RESULT_PREFIX=B003KY_転送指示結果ファイル_
+BACKUP_RESULT_PREFIX=B003KyouyoTensoinfo.dat_
 
 #=========================================
 # その他の設定

@@ -232,8 +232,8 @@ backup_transferred_file() {
     log_message "INFO" "転送済みファイルのバックアップを開始します"
     
     # 転送指示結果ファイルの存在確認
-    if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
-        log_message "ERROR" "転送指示結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
+    if [ ! -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
+        log_message "ERROR" "転送指示結果ファイルが見つかりません: $GIS_CHIKEI_TRANS_RESULT_FILE"
         return 1
     fi
 
@@ -246,7 +246,7 @@ backup_transferred_file() {
     local result_backup_name="${GIS_CHIKEI_TRANS_FILE}_${current_date}"
     
     # 転送指示結果ファイルをバックアップ
-    if cp "$TRANSFER_RESULT_FILE" "$backup_dir/$result_backup_name"; then
+    if cp "$GIS_CHIKEI_TRANS_RESULT_FILE" "$backup_dir/$result_backup_name"; then
         log_message "INFO" "転送指示結果ファイルをバックアップしました: $backup_dir/$result_backup_name"
     else
         log_message "ERROR" "転送指示結果ファイルのバックアップに失敗しました"
@@ -274,7 +274,7 @@ backup_transferred_file() {
             log_message "ERROR" "転送済みファイルのバックアップに失敗しました: $remote_file"
             return 1
         fi
-    done < "$TRANSFER_RESULT_FILE"
+    done < "$GIS_CHIKEI_TRANS_RESULT_FILE"
 
     # 3世代より古いバックアップの削除
     # 圧縮ファイルのバックアップ
@@ -306,16 +306,16 @@ backup_transferred_file() {
 process_transfer_instruction_result() {
     log_message "INFO" "転送指示結果ファイルの処理を開始します"
 
-    if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
-        log_message "ERROR" "転送指示結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
+    if [ ! -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
+        log_message "ERROR" "転送指示結果ファイルが見つかりません: $GIS_CHIKEI_TRANS_RESULT_FILE"
         return 1
     fi
 
     log_message "DEBUG" "転送指示結果ファイルの内容:"
-    log_and_execute "cat \"$TRANSFER_RESULT_FILE\""
+    log_and_execute "cat \"$GIS_CHIKEI_TRANS_RESULT_FILE\""
 
     # 転送指示結果ファイルの読み込み
-    local file_content=$(cat "$TRANSFER_RESULT_FILE")
+    local file_content=$(cat "$GIS_CHIKEI_TRANS_RESULT_FILE")
     IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
 
     log_message "DEBUG" "ファイル名: $file_name"
@@ -330,10 +330,10 @@ process_transfer_instruction_result() {
     fi
 
     # 転送指示結果ファイルの削除
-    if log_and_execute "rm \"$TRANSFER_RESULT_FILE\""; then
-        log_message "INFO" "転送指示結果ファイルを削除しました: $TRANSFER_RESULT_FILE"
+    if log_and_execute "rm \"$GIS_CHIKEI_TRANS_RESULT_FILE\""; then
+        log_message "INFO" "転送指示結果ファイルを削除しました: $GIS_CHIKEI_TRANS_RESULT_FILE"
     else
-        log_message "ERROR" "転送指示結果ファイルの削除に失敗しました: $TRANSFER_RESULT_FILE"
+        log_message "ERROR" "転送指示結果ファイルの削除に失敗しました: $GIS_CHIKEI_TRANS_RESULT_FILE"
         return 1
     fi
 
@@ -344,13 +344,13 @@ process_transfer_instruction_result() {
 update_transfer_instruction_info() {
     log_message "INFO" "転送指示情報の更新処理を開始します"
 
-    if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
-        log_message "ERROR" "転送指示結果ファイルが見つかりません: $TRANSFER_RESULT_FILE"
+    if [ ! -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
+        log_message "ERROR" "転送指示結果ファイルが見つかりません: $GIS_CHIKEI_TRANS_RESULT_FILE"
         return 1
     fi
 
     log_message "DEBUG" "転送指示結果ファイルの内容:"
-    log_and_execute "cat \"$TRANSFER_RESULT_FILE\""
+    log_and_execute "cat \"$GIS_CHIKEI_TRANS_RESULT_FILE\""
 
     # 転送指示情報ファイルを初期化
     > "$GIS_CHIKEI_TRANS_INFO_FILE"
@@ -374,7 +374,7 @@ update_transfer_instruction_info() {
         else
             log_message "INFO" "ステータスが転送済みです。このファイルはスキップします: $file_name"
         fi
-    done < "$TRANSFER_RESULT_FILE"
+    done < "$GIS_CHIKEI_TRANS_RESULT_FILE"
 
     if [ -s "$GIS_CHIKEI_TRANS_INFO_FILE" ]; then
         log_message "INFO" "転送指示情報ファイルが更新されました: $GIS_CHIKEI_TRANS_INFO_FILE"
@@ -470,7 +470,7 @@ main() {
     # 必須パラメータの確認
     required_params=(
         "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
-        "TRANSFER_RESULT_FILE" "GIS_CHIKEI_TRANS_INFO_FILE" "GIS_CHIKEI_TRANS_COMP_FILE"
+        "GIS_CHIKEI_TRANS_RESULT_FILE" "GIS_CHIKEI_TRANS_INFO_FILE" "GIS_CHIKEI_TRANS_COMP_FILE"
         "BACKUP_DIR" "GYOMU_ROOT"
     )
     for param in "${required_params[@]}"; do
@@ -491,7 +491,7 @@ main() {
     SHAPE_FILES_ROOT="$GYOMU_ROOT/$SHAPE_FILES_ROOT"
     WORK_DIR="$GYOMU_ROOT/$WORK_DIR"
     UPDATE_MESH_LIST="$GYOMU_ROOT/$UPDATE_MESH_LIST"
-    TRANSFER_RESULT_FILE="$GYOMU_ROOT/$TRANSFER_RESULT_FILE"
+    GIS_CHIKEI_TRANS_RESULT_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_RESULT_FILE"
     GIS_CHIKEI_TRANS_INFO_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_INFO_FILE"
     GIS_CHIKEI_TRANS_COMP_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_FILE"
     BACKUP_DIR="$GYOMU_ROOT/$BACKUP_DIR"
@@ -501,8 +501,8 @@ main() {
     log_message "INFO" "$JOB_NAME を開始します。"
 
     log_message "INFO" "（8）転送指示結果ファイル存在チェック"
-    if [ ! -f "$TRANSFER_RESULT_FILE" ]; then
-        log_message "WARN" "S1ZZZZW0002 ファイル未存在。$TRANSFER_RESULT_FILE"
+    if [ ! -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
+        log_message "WARN" "S1ZZZZW0002 ファイル未存在。$GIS_CHIKEI_TRANS_RESULT_FILE"
         log_message "INFO" "転送指示結果ファイルが存在しないため、処理をスキップして正常終了します。"
         exit 100  # 特別な終了コードを使用
     fi
@@ -519,11 +519,11 @@ main() {
     fi
 
     log_message "INFO" "（10）転送指示結果ファイル読込み"
-    if [ -f "$TRANSFER_RESULT_FILE" ]; then
+    if [ -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
         # ファイルの内容を読み込む
         local file_content
-        if file_content=$(cat "$TRANSFER_RESULT_FILE"); then
-            log_message "INFO" "転送指示結果ファイルを読み込みました: $TRANSFER_RESULT_FILE"
+        if file_content=$(cat "$GIS_CHIKEI_TRANS_RESULT_FILE"); then
+            log_message "INFO" "転送指示結果ファイルを読み込みました: $GIS_CHIKEI_TRANS_RESULT_FILE"
             
             # ファイルの内容を解析
             IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
@@ -543,11 +543,11 @@ main() {
                 log_message "INFO" "未転送（ステータス: $status）"
             fi
         else
-            log_message "ERROR" "S1ZZZZE004 ファイルリードエラー: $TRANSFER_RESULT_FILE"
+            log_message "ERROR" "S1ZZZZE004 ファイルリードエラー: $GIS_CHIKEI_TRANS_RESULT_FILE"
             exit 9
         fi
     else
-        log_message "ERROR" "S1ZZZZE004 ファイルリードエラー: $TRANSFER_RESULT_FILE が存在しません"
+        log_message "ERROR" "S1ZZZZE004 ファイルリードエラー: $GIS_CHIKEI_TRANS_RESULT_FILE が存在しません"
         exit 9
     fi
 
@@ -573,14 +573,14 @@ main() {
     delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
 
     log_message "INFO" "（18）転送指示結果ファイル削除"
-    if [ -f "$TRANSFER_RESULT_FILE" ]; then
-        if rm "$TRANSFER_RESULT_FILE"; then
-            log_message "INFO" "転送指示結果ファイルを削除しました: $TRANSFER_RESULT_FILE"
+    if [ -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
+        if rm "$GIS_CHIKEI_TRANS_RESULT_FILE"; then
+            log_message "INFO" "転送指示結果ファイルを削除しました: $GIS_CHIKEI_TRANS_RESULT_FILE"
         else
-            log_message "ERROR" "転送指示結果ファイルの削除に失敗しました: $TRANSFER_RESULT_FILE"
+            log_message "ERROR" "転送指示結果ファイルの削除に失敗しました: $GIS_CHIKEI_TRANS_RESULT_FILE"
         fi
     else
-        log_message "WARN" "削除する転送指示結果ファイルが存在しません: $TRANSFER_RESULT_FILE"
+        log_message "WARN" "削除する転送指示結果ファイルが存在しません: $GIS_CHIKEI_TRANS_RESULT_FILE"
     fi
 
     log_message "INFO" "（19）終了処理"
