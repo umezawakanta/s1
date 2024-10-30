@@ -51,6 +51,12 @@ log_message "START" "$JOB_NAME を開始します。"
 # コンフィグファイルの読み込み
 source "$CONFIG_FILE"
 
+# GYOMU_ROOTを絶対パスに変換
+if [[ "$GYOMU_ROOT" != /* ]]; then
+    GYOMU_ROOT="$(cd "$GYOMU_ROOT" && pwd)"
+    log_message "INFO" "GYOMU_ROOTを絶対パスに変換しました: $GYOMU_ROOT"
+fi
+
 # 転送用圧縮ファイル格納フォルダのパスを設定
 COMPRESSED_FILE_DIR="$GYOMU_ROOT/$(dirname "$GIS_CHIKEI_TRANS_FILE")"
 

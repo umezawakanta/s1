@@ -359,6 +359,44 @@ update_transfer_instruction_info() {
     log_message "INFO" "転送指示情報の更新処理が完了しました"
 }
 
+# 転送指示情報の更新
+update_transfer_instruction_info_after() {
+    log_message "INFO" "転送指示情報の更新処理を開始します"
+
+    # 転送用圧縮ファイルの存在確認
+    if [ ! -f "$GIS_CHIKEI_TRANS_FILE" ]; then
+        log_message "ERROR" "転送用圧縮ファイルが見つかりません: $GIS_CHIKEI_TRANS_FILE"
+        return 1
+    fi
+
+    # 転送用圧縮ファイル名から情報を抽出
+    local file_name=$(basename "$GIS_CHIKEI_TRANS_FILE")
+    local timestamp=$(date -r "$GIS_CHIKEI_TRANS_FILE" +%Y%m%d%H%M%S)
+    
+    log_message "DEBUG" "ファイル名: $file_name"
+    log_message "DEBUG" "タイムスタンプ: $timestamp"
+
+    # 転送指示情報ファイルのディレクトリを作成
+    create_dir_if_not_exists "$(dirname "$TRANSFER_INFO_FILE")"
+
+    # 新しい行を作成
+    local new_line="$file_name,$timestamp,/sq5nas/data/recv/SQ500ES011/$file_name,$GYOMU_ROOT/FT/$file_name,0,chikei,$timestamp"
+    
+    # 転送指示情報ファイルに追加
+    echo "$new_line" >> "$TRANSFER_INFO_FILE"
+    
+    if [ $? -eq 0 ]; then
+        log_message "INFO" "転送指示情報ファイルを更新しました: $TRANSFER_INFO_FILE"
+        log_message "DEBUG" "追加したレコード: $new_line"
+    else
+        log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
+        return 1
+    fi
+
+    log_message "INFO" "転送指示情報の更新処理が完了しました"
+    return 0
+}
+
 # メインプロセス
 main() {
     # 初期化エラーをキャッチするための一時的なログ関数
@@ -505,7 +543,7 @@ main() {
     create_transfer_compressed_file || log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
 
     log_message "INFO" "（16）転送指示情報ファイル更新"
-    update_transfer_instruction_info || log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
+    update_transfer_instruction_info_after || log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
 
     log_message "INFO" "（17）シェープファイル削除"
     delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
