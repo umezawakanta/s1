@@ -161,10 +161,21 @@ create_update_mesh_list() {
 create_transfer_compressed_file() {
     log_message "INFO" "転送用圧縮ファイルを作成中"
     create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_FILE")"
-    if log_and_execute "tar -czf \"$GIS_CHIKEI_TRANS_FILE\" -C \"$(dirname "$WORK_DIR")\" \"$(basename "$WORK_DIR")\" \"$UPDATE_MESH_LIST\""; then
+    
+    # 現在のディレクトリを保存
+    local current_dir=$(pwd)
+        
+    # WORK_DIRに移動してtar作成
+    cd "$WORK_DIR" || return 1
+    
+    if log_and_execute "tar -czf \"$GIS_CHIKEI_TRANS_FILE\" *"; then
         log_message "INFO" "転送用圧縮ファイルを作成しました: $GIS_CHIKEI_TRANS_FILE"
+        cd "$current_dir" || return 1
+        return 0
     else
         log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
+        rm -f "$(basename "$UPDATE_MESH_LIST")"  # コピーしたメッシュリストを削除
+        cd "$current_dir" || return 1
         return 1
     fi
 }
