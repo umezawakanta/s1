@@ -28,17 +28,21 @@ fi
 
 # ログ出力関数
 log_message() {
-    local log_type=$1
+    local level=$1
     local message=$2
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     local log_entry
-    case $log_type in
-        "START") log_entry="開始ログ: $message" ;;
-        "END") log_entry="終了ログ: $message" ;;
-        "ERROR") log_entry="エラーログ: $message" ;;
-        *) log_entry="シェル標準出力ログ: $message" ;;
+    case $level in
+        "START") log_entry="[$level] $message" ;;
+        "END") log_entry="[$level] $message" ;;
+        "ERROR") log_entry="[$level] $message" ;;
+        "INFO") log_entry="[$level] $message" ;;
+        "WARN") log_entry="[$level] $message" ;;
+        "DEBUG") log_entry="[$level] $message" ;;
+        *) log_entry="[INFO] $message" ;;
     esac
-    echo "$log_entry"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') $log_entry" >> "$LOG_FILE"
+    echo "$timestamp $log_entry"
+    echo "$timestamp $log_entry" >> "$LOG_FILE"
 }
 
 # 開始ログ
@@ -52,12 +56,10 @@ COMPRESSED_FILE_DIR="$GYOMU_ROOT/$(dirname "$GIS_CHIKEI_TRANS_FILE")"
 
 # 転送指示結果ファイルの作成
 TRANSFER_RESULT_FILE="$GYOMU_ROOT/$TRANSFER_RESULT_FILE"
-log_message "" "転送指示結果ファイルを作成します: $TRANSFER_RESULT_FILE"
+log_message "INFO" "転送指示結果ファイルを作成します: $TRANSFER_RESULT_FILE"
 
 # 転送用圧縮ファイル格納フォルダ内のファイルを検索
-shopt -s nullglob
-compressed_files=("$COMPRESSED_FILE_DIR"/*.tar.gz)
-shopt -u nullglob
+compressed_files=($(ls -t "$COMPRESSED_FILE_DIR"/*.tar.gz 2>/dev/null))
 
 if [ ${#compressed_files[@]} -gt 0 ]; then
     # 転送指示結果ファイルを初期化
@@ -85,7 +87,7 @@ fi
 # 実行シェルの呼び出し
 EXECUTOR_SCRIPT="sbin/Bs1SFF1010020ConversionFormatGIS.sh"
 if [ -f "$EXECUTOR_SCRIPT" ]; then
-    log_message "" "実行シェルを呼び出します: $EXECUTOR_SCRIPT"
+    log_message "INFO" "実行シェルを呼び出します: $EXECUTOR_SCRIPT"
     "$EXECUTOR_SCRIPT" "$CONFIG_FILE"
     EXIT_STATUS=$?
 else
