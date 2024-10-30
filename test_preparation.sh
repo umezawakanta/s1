@@ -85,13 +85,13 @@ else
 fi
 
 # 実行シェルの呼び出し
-EXECUTOR_SCRIPT="sbin/Bs1SFF1010020ConversionFormatGIS.sh"
+EXECUTOR_SCRIPT="./Bs1SFF1010020Sta.sh"
 if [ -f "$EXECUTOR_SCRIPT" ]; then
-    log_message "INFO" "実行シェルを呼び出します: $EXECUTOR_SCRIPT"
+    log_message "INFO" "起動シェルを呼び出します: $EXECUTOR_SCRIPT"
     "$EXECUTOR_SCRIPT" "$CONFIG_FILE"
     EXIT_STATUS=$?
 else
-    log_message "ERROR" "実行シェルが見つかりません: $EXECUTOR_SCRIPT"
+    log_message "ERROR" "起動シェルが見つかりません: $EXECUTOR_SCRIPT"
     EXIT_STATUS=1
 fi
 

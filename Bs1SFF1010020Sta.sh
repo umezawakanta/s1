@@ -22,17 +22,21 @@ fi
 
 # ログ出力関数
 log_message() {
-    local log_type=$1
+    local level=$1
     local message=$2
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     local log_entry
-    case $log_type in
-        "START") log_entry="開始ログ: $message" ;;
-        "END") log_entry="終了ログ: $message" ;;
-        "ERROR") log_entry="エラーログ: $message" ;;
-        *) log_entry="シェル標準出力ログ: $message" ;;
+    case $level in
+        "START") log_entry="[$level] $message" ;;
+        "END") log_entry="[$level] $message" ;;
+        "ERROR") log_entry="[$level] $message" ;;
+        "INFO") log_entry="[$level] $message" ;;
+        "WARN") log_entry="[$level] $message" ;;
+        "DEBUG") log_entry="[$level] $message" ;;
+        *) log_entry="[INFO] $message" ;;
     esac
-    echo "$log_entry"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') $log_entry" >> "$LOG_FILE"
+    echo "$timestamp $log_entry"
+    echo "$timestamp $log_entry" >> "$LOG_FILE"
 }
 
 # 開始ログ
@@ -41,9 +45,10 @@ log_message "START" "$JOB_NAME を開始します。"
 # 実行シェルの呼び出し
 EXECUTOR_SCRIPT="sbin/Bs1SFF1010020ConversionFormatGIS.sh"
 if [ -f "$EXECUTOR_SCRIPT" ]; then
-    log_message "" "実行シェルを呼び出します: $EXECUTOR_SCRIPT"
+    log_message "INFO" "実行シェルを呼び出します: $EXECUTOR_SCRIPT"
     "$EXECUTOR_SCRIPT" "$CONFIG_FILE"
     EXIT_STATUS=$?
+    log_message "DEBUG" "実行シェルの終了ステータス: $EXIT_STATUS"
 else
     log_message "ERROR" "実行シェルが見つかりません: $EXECUTOR_SCRIPT"
     EXIT_STATUS=1
