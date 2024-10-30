@@ -399,19 +399,20 @@ update_transfer_instruction_info_after() {
 
 # メインプロセス
 main() {
-    # 初期化エラーをキャッチするための一時的なログ関数
-    temp_log() {
-        echo "$(date '+%Y-%m-%d %H:%M:%S') [$1] $2"
-    }
+    # ログファイルの設定
+    LOG_FILE="log/process.log"
 
-    temp_log "INFO" "（1）起動引数の個数チェック"
+    # ログファイルのディレクトリを作成
+    mkdir -p "$(dirname "$LOG_FILE")"
+
+    log_message "INFO" "（1）起動引数の個数チェック"
     # 環境情報ファイルのパスを引数から取得
     if [ $# -eq 0 ]; then
         echo "エラー: 環境情報ファイルのパスが指定されていません"
         exit 1
     fi
 
-    temp_log "INFO" "（2）設定パラメータ設定"
+    log_message "INFO" "（2）設定パラメータ設定"
     SHELL_PRM_FILE_PATH="$1"
     if [ ! -f "$SHELL_PRM_FILE_PATH" ]; then
         echo "エラー: コンフィグファイル $SHELL_PRM_FILE_PATH が存在しません"
@@ -420,9 +421,6 @@ main() {
 
     # コンフィグファイルの読み込み
     source "$SHELL_PRM_FILE_PATH"
-
-    # ログファイルのディレクトリを作成
-    mkdir -p "$(dirname "$LOG_FILE")"
 
     # これ以降、log_message 関数が使用可能になる
 
@@ -445,7 +443,7 @@ main() {
 
     # 必須パラメータの確認
     required_params=(
-        "LOG_FILE" "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
+        "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
         "TRANSFER_RESULT_FILE" "TRANSFER_INFO_FILE" "GIS_CHIKEI_TRANS_FILE"
         "BACKUP_DIR" "GYOMU_ROOT"
     )
@@ -463,7 +461,6 @@ main() {
     fi
 
     # 各パラメータにGYOMU_ROOTを適用
-    LOG_FILE="$GYOMU_ROOT/$LOG_FILE"
     SHAPE_FILES_ROOT="$GYOMU_ROOT/$SHAPE_FILES_ROOT"
     WORK_DIR="$GYOMU_ROOT/$WORK_DIR"
     UPDATE_MESH_LIST="$GYOMU_ROOT/$UPDATE_MESH_LIST"

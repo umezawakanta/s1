@@ -4,7 +4,7 @@
 JOB_NAME="EAM (GIS) 提供用転送形式変換 (地形図) 起動シェル"
 
 # ログファイルの設定
-LOG_FILE="log/logfile.log"
+STARTER_LOG_FILE="log/starter.log"
 
 # 設定ファイルの読み込み
 source config/batchenv_sjis.sh
@@ -36,7 +36,7 @@ log_message() {
         *) log_entry="[INFO] $message" ;;
     esac
     echo "$timestamp $log_entry"
-    echo "$timestamp $log_entry" >> "$LOG_FILE"
+    echo "$timestamp $log_entry" >> "$STARTER_LOG_FILE"
 }
 
 # 開始ログ

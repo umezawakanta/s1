@@ -7,8 +7,6 @@ STARTER_SCRIPT=sbin/starter.sh
 EXECUTOR_SCRIPT=sbin/file_processor.sh
 
 # ログファイルのパス
-JP1_LOG_FILE=log/jp1_job_log.txt
-STARTER_LOG_FILE=log/starter_log.txt
 
 # その他の設定
 TIMEOUT=3600
@@ -18,7 +16,6 @@ MAX_RETRIES=3
 GYOMU_ROOT=.
 
 # File paths
-LOG_FILE=log/process.log
 SHAPE_FILES_ROOT=shape
 WORK_DIR=shape/comp_work
 UPDATE_MESH_LIST=$WORK_DIR/B003KY_UpdateMeshList.csv

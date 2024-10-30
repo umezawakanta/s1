@@ -10,7 +10,7 @@ set -u
 JOB_NAME="EAM (GIS) 提供用転送形式変換 (地形図) テスト準備"
 
 # ログファイルの設定
-LOG_FILE="log/test_preparation.log"
+TEST_LOG_FILE="log/test_preparation2.log"
 
 # 設定ファイルの読み込み
 source config/batchenv_sjis.sh
@@ -42,7 +42,7 @@ log_message() {
         *) log_entry="[INFO] $message" ;;
     esac
     echo "$timestamp $log_entry"
-    echo "$timestamp $log_entry" >> "$LOG_FILE"
+    echo "$timestamp $log_entry" >> "$TEST_LOG_FILE"
 }
 
 # 開始ログ
