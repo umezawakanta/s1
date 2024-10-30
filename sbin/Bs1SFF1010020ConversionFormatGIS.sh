@@ -102,7 +102,7 @@ collect_shape_files() {
             local medium_mesh=${mesh_number:3:2}
             local small_mesh=${mesh_number:5:2}
             
-            local target_dir="${WORK_DIR}/${sys_dir}/${large_mesh}/${medium_mesh}/${small_mesh}"
+            local target_dir="${GIS_CHIKEI_TRANS_WORK_DIR}/${sys_dir}/${large_mesh}/${medium_mesh}/${small_mesh}"
             log_message "INFO" "シェープファイルを複写します: $mesh_dir -> $target_dir"
             
             # ディレクトリ構造を作成
@@ -197,7 +197,7 @@ create_transfer_compressed_file() {
     local current_dir=$(pwd)
         
     # WORK_DIRに移動してtar作成
-    cd "$WORK_DIR" || return 1
+    cd "$GIS_CHIKEI_TRANS_WORK_DIR" || return 1
     
     if log_and_execute "tar -czf \"$GIS_CHIKEI_TRANS_COMP_FILE\" *"; then
         log_message "INFO" "転送用圧縮ファイルを作成しました: $GIS_CHIKEI_TRANS_COMP_FILE"
@@ -214,16 +214,16 @@ create_transfer_compressed_file() {
 # シェープファイル削除
 delete_shape_files() {
     log_message "INFO" "シェープファイルを削除中"
-    if [ -d "$WORK_DIR" ]; then
-        log_message "INFO" "ファイル圧縮用ワークディレクトリを削除: $WORK_DIR"
-        if log_and_execute "rm -rf \"$WORK_DIR\""; then
+    if [ -d "$GIS_CHIKEI_TRANS_WORK_DIR" ]; then
+        log_message "INFO" "ファイル圧縮用ワークディレクトリを削除: $GIS_CHIKEI_TRANS_WORK_DIR"
+        if log_and_execute "rm -rf \"$GIS_CHIKEI_TRANS_WORK_DIR\""; then
             log_message "INFO" "シェープファイルを削除しました"
         else
             log_message "ERROR" "シェープファイルの削除に失敗しました"
             return 1
         fi
     else
-        log_message "WARN" "削除するシェープファイルが見つかりません: $WORK_DIR"
+        log_message "WARN" "削除するシェープファイルが見つかりません: $GIS_CHIKEI_TRANS_WORK_DIR"
     fi
 }
 
@@ -469,7 +469,7 @@ main() {
 
     # 必須パラメータの確認
     required_params=(
-        "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
+        "SHAPE_FILES_ROOT" "GIS_CHIKEI_TRANS_WORK_DIR" "UPDATE_MESH_LIST"
         "GIS_CHIKEI_TRANS_RESULT_FILE" "GIS_CHIKEI_TRANS_INFO_FILE" "GIS_CHIKEI_TRANS_COMP_FILE"
         "BACKUP_DIR" "GYOMU_ROOT"
     )
@@ -489,7 +489,7 @@ main() {
     # 各パラメータにGYOMU_ROOTを適用
     LOG_FILE="$GYOMU_ROOT/$LOG_FILE"
     SHAPE_FILES_ROOT="$GYOMU_ROOT/$SHAPE_FILES_ROOT"
-    WORK_DIR="$GYOMU_ROOT/$WORK_DIR"
+    GIS_CHIKEI_TRANS_WORK_DIR="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_WORK_DIR"
     UPDATE_MESH_LIST="$GYOMU_ROOT/$UPDATE_MESH_LIST"
     GIS_CHIKEI_TRANS_RESULT_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_RESULT_FILE"
     GIS_CHIKEI_TRANS_INFO_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_INFO_FILE"
@@ -508,14 +508,14 @@ main() {
     fi
 
     log_message "INFO" "（9）ファイル圧縮用ワークディレクトリ削除"
-    if [ -d "$WORK_DIR" ]; then
-        if rm -rf "$WORK_DIR"; then
-            log_message "INFO" "ファイル圧縮用ワークディレクトリを削除しました: $WORK_DIR"
+    if [ -d "$GIS_CHIKEI_TRANS_WORK_DIR" ]; then
+        if rm -rf "$GIS_CHIKEI_TRANS_WORK_DIR"; then
+            log_message "INFO" "ファイル圧縮用ワークディレクトリを削除しました: $GIS_CHIKEI_TRANS_WORK_DIR"
         else
-            log_message "ERROR" "ファイル圧縮用ワークディレクトリの削除に失敗しました: $WORK_DIR"
+            log_message "ERROR" "ファイル圧縮用ワークディレクトリの削除に失敗しました: $GIS_CHIKEI_TRANS_WORK_DIR"
         fi
     else
-        log_message "INFO" "削除するファイル圧縮用ワークディレクトリが存在しません: $WORK_DIR"
+        log_message "INFO" "削除するファイル圧縮用ワークディレクトリが存在しません: $GIS_CHIKEI_TRANS_WORK_DIR"
     fi
 
     log_message "INFO" "（10）転送指示結果ファイル読込み"
