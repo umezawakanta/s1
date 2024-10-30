@@ -279,9 +279,9 @@ backup_transferred_file() {
     # 3世代より古いバックアップの削除
     # 圧縮ファイルのバックアップ
     local tar_backup_files=("$GIS_CHIKEI_TRANS_BACK_DIR"/*.tar.gz)
-    if [ ${#tar_backup_files[@]} -gt 3 ]; then
+    if [ ${#tar_backup_files[@]} -gt $GIS_CHIKEI_COMP_BAK_SEDAI ]; then
         IFS=$'\n' sorted_tar_files=($(ls -t "${tar_backup_files[@]}"))
-        for old_file in "${sorted_tar_files[@]:3}"; do
+        for old_file in "${sorted_tar_files[@]:$GIS_CHIKEI_COMP_BAK_SEDAI}"; do
             rm "$old_file"
             log_message "INFO" "古い圧縮ファイルバックアップを削除しました: $old_file"
         done
@@ -289,9 +289,9 @@ backup_transferred_file() {
 
     # 転送指示結果ファイルのバックアップ
     local result_backup_files=("$GIS_CHIKEI_TRANS_BACK_DIR"/${GIS_CHIKEI_TRANS_FILE}_*)
-    if [ ${#result_backup_files[@]} -gt 3 ]; then
+    if [ ${#result_backup_files[@]} -gt $GIS_CHIKEI_COMP_BAK_SEDAI ]; then
         IFS=$'\n' sorted_result_files=($(ls -t "${result_backup_files[@]}"))
-        for old_file in "${sorted_result_files[@]:3}"; do
+        for old_file in "${sorted_result_files[@]:$GIS_CHIKEI_COMP_BAK_SEDAI}"; do
             rm "$old_file"
             log_message "INFO" "古い転送指示結果ファイルバックアップを削除しました: $old_file"
         done
@@ -416,7 +416,7 @@ update_transfer_instruction_info_after() {
     local card_name=$GIS_CHIKEI_DENSO_CARD
     
     # ローカルファイル名
-    local local_file="/sq5nas/data/recv/SQ500ES011/$file_name"
+    local local_file="$GIS_CHIKEI_GIS_COMP_DIR$file_name"
     
     # リモートファイル名
     local remote_file="$GYOMU_ROOT/FT/$file_name"

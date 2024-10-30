@@ -143,8 +143,8 @@ if [ ${#compressed_files[@]} -gt 0 ]; then
         # ファイル名
         file_name=$(basename "$file")
         
-        # ローカルファイル（SQ500ES011配下の絶対パス）
-        local_file="/sq5nas/data/recv/SQ500ES011/$file_name"
+        # ローカルファイル
+        local_file="$GIS_CHIKEI_GIS_COMP_DIR$file_name"
         
         # リモートファイル（転送先の絶対パス）
         remote_file="$GYOMU_ROOT/FT/$file_name"
@@ -172,7 +172,7 @@ if [ ${#compressed_files[@]} -gt 0 ]; then
 else
     log_message "WARN" "転送用圧縮ファイルが見つかりません。サンプルデータを使用します。"
     # サンプルデータで作成
-    echo "1,$GIS_CHIKEI_DENSO_CARD,/sq5nas/data/recv/SQ500ES011/B003KY_20241030173959.tar.gz,$GYOMU_ROOT/FT/B003KY_20241030173959.tar.gz,0,chikei,20241030173959" > "$GIS_CHIKEI_TRANS_RESULT_FILE"
+    echo "1,$GIS_CHIKEI_DENSO_CARD,${GIS_CHIKEI_GIS_COMP_DIR}B003KY_20241030173959.tar.gz,$GYOMU_ROOT/FT/B003KY_20241030173959.tar.gz,0,chikei,20241030173959" > "$GIS_CHIKEI_TRANS_RESULT_FILE"
 fi
 
 # 実行シェルの呼び出し
