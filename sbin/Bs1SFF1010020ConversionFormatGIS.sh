@@ -412,8 +412,8 @@ update_transfer_instruction_info_after() {
         ((registration_number++))
     fi
     
-    # 伝送カード名（GIS_CHIKEI固定）
-    local card_name="GIS_CHIKEI"
+    # 伝送カード名
+    local card_name=$GIS_CHIKEI_DENSO_CARD
     
     # ローカルファイル名
     local local_file="/sq5nas/data/recv/SQ500ES011/$file_name"

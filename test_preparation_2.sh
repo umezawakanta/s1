@@ -137,8 +137,8 @@ if [ ${#compressed_files[@]} -gt 0 ]; then
         # 登録番号（連番）
         registration_number=$counter
         
-        # 伝送カード名（固定値）
-        card_name="GIS_CHIKEI"
+        # 伝送カード名
+        card_name=$GIS_CHIKEI_DENSO_CARD
         
         # ファイル名
         file_name=$(basename "$file")
@@ -171,8 +171,8 @@ if [ ${#compressed_files[@]} -gt 0 ]; then
     log_message "INFO" "転送指示結果ファイルを作成しました: $GIS_CHIKEI_TRANS_RESULT_FILE"
 else
     log_message "WARN" "転送用圧縮ファイルが見つかりません。サンプルデータを使用します。"
-    # サンプルデータも新しいフォーマットで作成
-    echo "1,GIS_CHIKEI,/sq5nas/data/recv/SQ500ES011/B003KY_20241030173959.tar.gz,$GYOMU_ROOT/FT/B003KY_20241030173959.tar.gz,0,chikei,20241030173959" > "$GIS_CHIKEI_TRANS_RESULT_FILE"
+    # サンプルデータで作成
+    echo "1,$GIS_CHIKEI_DENSO_CARD,/sq5nas/data/recv/SQ500ES011/B003KY_20241030173959.tar.gz,$GYOMU_ROOT/FT/B003KY_20241030173959.tar.gz,0,chikei,20241030173959" > "$GIS_CHIKEI_TRANS_RESULT_FILE"
 fi
 
 # 実行シェルの呼び出し

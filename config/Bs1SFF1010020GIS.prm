@@ -60,5 +60,6 @@ BACKUP_RESULT_PREFIX=B003KyouyoTensoinfo.dat_
 #=========================================
 # その他の設定
 #=========================================
+GIS_CHIKEI_DENSO_CARD=GIS_CHIKEI
 FILE_PATTERN="*.tar.gz"
 TIMESTAMP_FORMAT="%Y%m%d%H%M%S"
