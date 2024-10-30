@@ -148,7 +148,44 @@ collect_shape_files() {
 create_update_mesh_list() {
     log_message "INFO" "作成した更新メッシュリストから重複した図面番号を削除してソートする"
     
-    # 作成した更新メッシュリストから重複した図面番号を削除してソートする
+    if [ ! -f "$UPDATE_MESH_LIST" ]; then
+        log_message "ERROR" "更新メッシュファイルリストが見つかりません: $UPDATE_MESH_LIST"
+        return 1
+    fi
+    
+    # 一時ファイルを作成
+    local temp_file="${UPDATE_MESH_LIST}.tmp"
+    
+    # ファイルをソートし、重複を削除
+    if sort -u "$UPDATE_MESH_LIST" > "$temp_file"; then
+        log_message "DEBUG" "更新メッシュファイルリストをソートし、重複を削除しました"
+        
+        # 元のファイルを一時ファイルで置き換え
+        if mv "$temp_file" "$UPDATE_MESH_LIST"; then
+            log_message "INFO" "更新メッシュファイルリストを更新しました: $UPDATE_MESH_LIST"
+            
+            # 処理結果の確認
+            local line_count=$(wc -l < "$UPDATE_MESH_LIST")
+            log_message "INFO" "更新メッシュファイルリストの行数: $line_count"
+            
+            if [ "$line_count" -gt 0 ]; then
+                log_message "DEBUG" "更新メッシュファイルリストの内容:"
+                log_and_execute "cat \"$UPDATE_MESH_LIST\""
+                return 0
+            else
+                log_message "ERROR" "更新メッシュファイルリストが空です"
+                return 1
+            fi
+        else
+            log_message "ERROR" "更新メッシュファイルリストの更新に失敗しました"
+            rm -f "$temp_file"
+            return 1
+        fi
+    else
+        log_message "ERROR" "更新メッシュファイルリストの処理に失敗しました"
+        rm -f "$temp_file"
+        return 1
+    fi
 }
 
 # 転送用圧縮ファイルの作成
