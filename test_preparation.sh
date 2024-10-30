@@ -113,29 +113,66 @@ shopt -s nullglob
 compressed_files=("$COMPRESSED_FILE_DIR"/*.tar.gz)
 shopt -u nullglob
 
+# 転送用圧縮ファイル格納フォルダ内のファイルを検索
+if [ ! -d "$COMPRESSED_FILE_DIR" ]; then
+    log_message "DEBUG" "圧縮ファイル格納フォルダを作成します"
+    mkdir -p "$COMPRESSED_FILE_DIR"
+fi
+
+log_message "DEBUG" "圧縮ファイルを検索します"
+shopt -s nullglob
+compressed_files=("$COMPRESSED_FILE_DIR"/*.tar.gz)
+shopt -u nullglob
+
 if [ ${#compressed_files[@]} -gt 0 ]; then
     log_message "DEBUG" "圧縮ファイルが見つかりました: ${#compressed_files[@]} 個"
     
     # 転送指示結果ファイルを初期化
     > "$GIS_CHIKEI_TRANS_RESULT_FILE"
 
-    for file in "${compressed_files[@]}"; do
-        file_name=$(basename "$file")
-        update_date=$(date -r "$file" +%Y%m%d%H%M%S)
-        local_file="/sq5nas/data/recv/SQ500ES011/$file_name"
-        remote_file="$GYOMU_ROOT/FT/$file_name"
-        status="0"
-        comment="chikei"
-        timestamp="$update_date"
+    # 登録番号のカウンター
+    counter=1
 
-        echo "$file_name,$update_date,$local_file,$remote_file,$status,$comment,$timestamp" >> "$GIS_CHIKEI_TRANS_RESULT_FILE"
+    for file in "${compressed_files[@]}"; do
+        # 登録番号（連番）
+        registration_number=$counter
+        
+        # 伝送カード名（固定値）
+        card_name="GIS_CHIKEI"
+        
+        # ファイル名
+        file_name=$(basename "$file")
+        
+        # ローカルファイル（SQ500ES011配下の絶対パス）
+        local_file="/sq5nas/data/recv/SQ500ES011/$file_name"
+        
+        # リモートファイル（転送先の絶対パス）
+        remote_file="$GYOMU_ROOT/FT/$file_name"
+        
+        # ステータス（0固定）
+        status="0"
+        
+        # コメント（chikei固定）
+        comment="chikei"
+        
+        # タイムスタンプ（圧縮ファイル作成時のタイムスタンプ）
+        timestamp=$(date -r "$file" +%Y%m%d%H%M%S)
+
+        # 転送指示結果ファイルに追加
+        # フォーマット: 登録番号,伝送カード名,ローカルファイル名,リモートファイル名,ステータス,コメント,タイムスタンプ
+        echo "$registration_number,$card_name,$local_file,$remote_file,$status,$comment,$timestamp" >> "$GIS_CHIKEI_TRANS_RESULT_FILE"
         log_message "INFO" "転送指示結果ファイルに追加しました: $file_name"
+        log_message "DEBUG" "追加レコード: $registration_number,$card_name,$local_file,$remote_file,$status,$comment,$timestamp"
+
+        # カウンターをインクリメント
+        ((counter++))
     done
 
     log_message "INFO" "転送指示結果ファイルを作成しました: $GIS_CHIKEI_TRANS_RESULT_FILE"
 else
     log_message "WARN" "転送用圧縮ファイルが見つかりません。サンプルデータを使用します。"
-    echo "B003KY_20241029154653.tar.gz,20241029102403,/sq5nas/data/recv/SQ500ES011/B003KY_20241029154653.tar.gz,/home/kanta/s1/FT/B003KY_20241029154653.tar.gz,0,chikei,20241029102403" > "$GIS_CHIKEI_TRANS_RESULT_FILE"
+    # サンプルデータも新しいフォーマットで作成
+    echo "1,GIS_CHIKEI,/sq5nas/data/recv/SQ500ES011/B003KY_20241030173959.tar.gz,$GYOMU_ROOT/FT/B003KY_20241030173959.tar.gz,0,chikei,20241030173959" > "$GIS_CHIKEI_TRANS_RESULT_FILE"
 fi
 
 # 実行シェルの呼び出し
