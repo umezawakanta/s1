@@ -353,7 +353,7 @@ update_transfer_instruction_info() {
     log_and_execute "cat \"$TRANSFER_RESULT_FILE\""
 
     # 転送指示情報ファイルを初期化
-    > "$TRANSFER_INFO_FILE"
+    > "$GIS_CHIKEI_TRANS_INFO_FILE"
 
     # 転送指示結果ファイルを1行ずつ処理
     while IFS=',' read -r file_name update_date local_file remote_file status comment timestamp || [ -n "$file_name" ]; do
@@ -369,15 +369,15 @@ update_transfer_instruction_info() {
             local new_line="$file_name,$update_date,$local_file,$remote_file,0,$comment,$timestamp"
             
             # 転送指示情報ファイルに追加
-            echo "$new_line" >> "$TRANSFER_INFO_FILE"
+            echo "$new_line" >> "$GIS_CHIKEI_TRANS_INFO_FILE"
             log_message "INFO" "転送指示情報ファイルに追加しました: $file_name"
         else
             log_message "INFO" "ステータスが転送済みです。このファイルはスキップします: $file_name"
         fi
     done < "$TRANSFER_RESULT_FILE"
 
-    if [ -s "$TRANSFER_INFO_FILE" ]; then
-        log_message "INFO" "転送指示情報ファイルが更新されました: $TRANSFER_INFO_FILE"
+    if [ -s "$GIS_CHIKEI_TRANS_INFO_FILE" ]; then
+        log_message "INFO" "転送指示情報ファイルが更新されました: $GIS_CHIKEI_TRANS_INFO_FILE"
     else
         log_message "INFO" "転送指示情報ファイルの更新はありませんでした"
     fi
@@ -403,16 +403,16 @@ update_transfer_instruction_info_after() {
     log_message "DEBUG" "タイムスタンプ: $timestamp"
 
     # 転送指示情報ファイルのディレクトリを作成
-    create_dir_if_not_exists "$(dirname "$TRANSFER_INFO_FILE")"
+    create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_INFO_FILE")"
 
     # 新しい行を作成
     local new_line="$file_name,$timestamp,/sq5nas/data/recv/SQ500ES011/$file_name,$GYOMU_ROOT/FT/$file_name,0,chikei,$timestamp"
     
     # 転送指示情報ファイルに追加
-    echo "$new_line" >> "$TRANSFER_INFO_FILE"
+    echo "$new_line" >> "$GIS_CHIKEI_TRANS_INFO_FILE"
     
     if [ $? -eq 0 ]; then
-        log_message "INFO" "転送指示情報ファイルを更新しました: $TRANSFER_INFO_FILE"
+        log_message "INFO" "転送指示情報ファイルを更新しました: $GIS_CHIKEI_TRANS_INFO_FILE"
         log_message "DEBUG" "追加したレコード: $new_line"
     else
         log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
@@ -470,7 +470,7 @@ main() {
     # 必須パラメータの確認
     required_params=(
         "SHAPE_FILES_ROOT" "WORK_DIR" "UPDATE_MESH_LIST"
-        "TRANSFER_RESULT_FILE" "TRANSFER_INFO_FILE" "GIS_CHIKEI_TRANS_COMP_FILE"
+        "TRANSFER_RESULT_FILE" "GIS_CHIKEI_TRANS_INFO_FILE" "GIS_CHIKEI_TRANS_COMP_FILE"
         "BACKUP_DIR" "GYOMU_ROOT"
     )
     for param in "${required_params[@]}"; do
@@ -492,7 +492,7 @@ main() {
     WORK_DIR="$GYOMU_ROOT/$WORK_DIR"
     UPDATE_MESH_LIST="$GYOMU_ROOT/$UPDATE_MESH_LIST"
     TRANSFER_RESULT_FILE="$GYOMU_ROOT/$TRANSFER_RESULT_FILE"
-    TRANSFER_INFO_FILE="$GYOMU_ROOT/$TRANSFER_INFO_FILE"
+    GIS_CHIKEI_TRANS_INFO_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_INFO_FILE"
     GIS_CHIKEI_TRANS_COMP_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_FILE"
     BACKUP_DIR="$GYOMU_ROOT/$BACKUP_DIR"
 
