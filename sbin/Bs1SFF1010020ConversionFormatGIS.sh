@@ -241,6 +241,18 @@ backup_transferred_file() {
     local backup_dir="${BACKUP_DIR}"
     create_dir_if_not_exists "$backup_dir"
 
+    # 転送指示結果ファイルのバックアップ名を生成（日付サフィックス付き）
+    local current_date=$(date +%Y%m%d%H%M%S)
+    local result_backup_name="B003KyouyoTensoinfo.dat_${current_date}"
+    
+    # 転送指示結果ファイルをバックアップ
+    if cp "$TRANSFER_RESULT_FILE" "$backup_dir/$result_backup_name"; then
+        log_message "INFO" "転送指示結果ファイルをバックアップしました: $backup_dir/$result_backup_name"
+    else
+        log_message "ERROR" "転送指示結果ファイルのバックアップに失敗しました"
+        return 1
+    fi
+
     # 転送指示結果ファイルを1行ずつ処理
     while IFS=',' read -r file_name update_date local_file remote_file status comment timestamp || [ -n "$file_name" ]; do
         # ステータスが転送済み（0）かチェック
@@ -249,25 +261,39 @@ backup_transferred_file() {
             continue
         fi
 
-        # リモートファイルをバックアップディレクトリに移動
-        if [ -f "$remote_file" ]; then
-            if mv "$remote_file" "$backup_dir/"; then
-                log_message "INFO" "転送済みファイルをバックアップしました: $remote_file -> $backup_dir/"
-            else
-                log_message "ERROR" "転送済みファイルのバックアップに失敗しました: $remote_file"
-            fi
-        else
+        # リモートファイルの存在確認
+        if [ ! -f "$remote_file" ]; then
             log_message "WARN" "バックアップ対象のファイルが見つかりません: $remote_file"
+            continue
+        fi
+
+        # リモートファイルをバックアップディレクトリに移動
+        if mv "$remote_file" "$backup_dir/"; then
+            log_message "INFO" "転送済みファイルをバックアップしました: $remote_file -> $backup_dir/"
+        else
+            log_message "ERROR" "転送済みファイルのバックアップに失敗しました: $remote_file"
+            return 1
         fi
     done < "$TRANSFER_RESULT_FILE"
 
     # 3世代より古いバックアップの削除
-    local backup_files=("$BACKUP_DIR"/*.tar.gz)
-    if [ ${#backup_files[@]} -gt 3 ]; then
-        IFS=$'\n' sorted_files=($(ls -t "${backup_files[@]}"))
-        for old_file in "${sorted_files[@]:3}"; do
+    # 圧縮ファイルのバックアップ
+    local tar_backup_files=("$BACKUP_DIR"/*.tar.gz)
+    if [ ${#tar_backup_files[@]} -gt 3 ]; then
+        IFS=$'\n' sorted_tar_files=($(ls -t "${tar_backup_files[@]}"))
+        for old_file in "${sorted_tar_files[@]:3}"; do
             rm "$old_file"
-            log_message "INFO" "古いバックアップを削除しました: $old_file"
+            log_message "INFO" "古い圧縮ファイルバックアップを削除しました: $old_file"
+        done
+    fi
+
+    # 転送指示結果ファイルのバックアップ
+    local result_backup_files=("$BACKUP_DIR"/B003KyouyoTensoinfo.dat_*)
+    if [ ${#result_backup_files[@]} -gt 3 ]; then
+        IFS=$'\n' sorted_result_files=($(ls -t "${result_backup_files[@]}"))
+        for old_file in "${sorted_result_files[@]:3}"; do
+            rm "$old_file"
+            log_message "INFO" "古い転送指示結果ファイルバックアップを削除しました: $old_file"
         done
     fi
 
