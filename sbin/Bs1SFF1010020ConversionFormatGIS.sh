@@ -238,7 +238,7 @@ backup_transferred_file() {
     fi
 
     # バックアップディレクトリの作成
-    local backup_dir="${BACKUP_DIR}"
+    local backup_dir="${GIS_CHIKEI_TRANS_BACK_DIR}"
     create_dir_if_not_exists "$backup_dir"
 
     # 転送指示結果ファイルのバックアップ名を生成（日付サフィックス付き）
@@ -278,7 +278,7 @@ backup_transferred_file() {
 
     # 3世代より古いバックアップの削除
     # 圧縮ファイルのバックアップ
-    local tar_backup_files=("$BACKUP_DIR"/*.tar.gz)
+    local tar_backup_files=("$GIS_CHIKEI_TRANS_BACK_DIR"/*.tar.gz)
     if [ ${#tar_backup_files[@]} -gt 3 ]; then
         IFS=$'\n' sorted_tar_files=($(ls -t "${tar_backup_files[@]}"))
         for old_file in "${sorted_tar_files[@]:3}"; do
@@ -288,7 +288,7 @@ backup_transferred_file() {
     fi
 
     # 転送指示結果ファイルのバックアップ
-    local result_backup_files=("$BACKUP_DIR"/${GIS_CHIKEI_TRANS_FILE}_*)
+    local result_backup_files=("$GIS_CHIKEI_TRANS_BACK_DIR"/${GIS_CHIKEI_TRANS_FILE}_*)
     if [ ${#result_backup_files[@]} -gt 3 ]; then
         IFS=$'\n' sorted_result_files=($(ls -t "${result_backup_files[@]}"))
         for old_file in "${sorted_result_files[@]:3}"; do
@@ -471,7 +471,7 @@ main() {
     required_params=(
         "SHAPE_FILES_ROOT" "GIS_CHIKEI_TRANS_WORK_DIR" "UPDATE_MESH_LIST"
         "GIS_CHIKEI_TRANS_RESULT_FILE" "GIS_CHIKEI_TRANS_INFO_FILE" "GIS_CHIKEI_TRANS_COMP_FILE"
-        "BACKUP_DIR" "GYOMU_ROOT"
+        "GIS_CHIKEI_TRANS_BACK_DIR" "GYOMU_ROOT"
     )
     for param in "${required_params[@]}"; do
         if [ -z "${!param}" ]; then
@@ -494,7 +494,7 @@ main() {
     GIS_CHIKEI_TRANS_RESULT_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_RESULT_FILE"
     GIS_CHIKEI_TRANS_INFO_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_INFO_FILE"
     GIS_CHIKEI_TRANS_COMP_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_FILE"
-    BACKUP_DIR="$GYOMU_ROOT/$BACKUP_DIR"
+    GIS_CHIKEI_TRANS_BACK_DIR="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_BACK_DIR"
 
 
     log_message "INFO" "（7）開始メッセージ出力"
