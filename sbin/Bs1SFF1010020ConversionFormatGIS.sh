@@ -405,8 +405,30 @@ update_transfer_instruction_info_after() {
     # 転送指示情報ファイルのディレクトリを作成
     create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_INFO_FILE")"
 
-    # 新しい行を作成
-    local new_line="$file_name,$timestamp,/sq5nas/data/recv/SQ500ES011/$file_name,$GYOMU_ROOT/FT/$file_name,0,chikei,$timestamp"
+    # 登録番号を計算（ファイル内の現在のレコード数 + 1）
+    local registration_number=1
+    if [ -f "$GIS_CHIKEI_TRANS_INFO_FILE" ]; then
+        registration_number=$(wc -l < "$GIS_CHIKEI_TRANS_INFO_FILE")
+        ((registration_number++))
+    fi
+    
+    # 伝送カード名（GIS_CHIKEI固定）
+    local card_name="GIS_CHIKEI"
+    
+    # ローカルファイル名
+    local local_file="/sq5nas/data/recv/SQ500ES011/$file_name"
+    
+    # リモートファイル名
+    local remote_file="$GYOMU_ROOT/FT/$file_name"
+    
+    # ステータス（1固定）
+    local status="1"
+    
+    # コメント（chikei固定）
+    local comment="chikei"
+
+    # 新しい行を作成（フォーマット: 登録番号,伝送カード名,ローカルファイル名,リモートファイル名,ステータス,コメント,タイムスタンプ）
+    local new_line="$registration_number,$card_name,$local_file,$remote_file,$status,$comment,$timestamp"
     
     # 転送指示情報ファイルに追加
     echo "$new_line" >> "$GIS_CHIKEI_TRANS_INFO_FILE"
