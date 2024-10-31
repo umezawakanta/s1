@@ -34,10 +34,11 @@ create_required_directories() {
 
 # ログレベルの定義
 declare -A LOG_LEVELS=(
-  ["DEBUG"]=0
-  ["INFO"]=1
-  ["WARN"]=2
-  ["ERROR"]=3
+  ["TRACE"]=0
+  ["DEBUG"]=1
+  ["INFO"]=2
+  ["WARN"]=3
+  ["ERROR"]=4
 )
 
 # メッセージをログに記録する関数

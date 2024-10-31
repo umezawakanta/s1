@@ -10,10 +10,11 @@ ERROR_COUNT=0
 
 # ログレベルの定義
 declare -A LOG_LEVELS=(
-  ["DEBUG"]=0
-  ["INFO"]=1
-  ["WARN"]=2
-  ["ERROR"]=3
+  ["TRACE"]=0
+  ["DEBUG"]=1
+  ["INFO"]=2
+  ["WARN"]=3
+  ["ERROR"]=4
 )
 
 # メッセージをログに記録する関数
@@ -443,14 +444,14 @@ main() {
     # ログファイルのディレクトリを作成
     mkdir -p "$(dirname "$LOG_FILE")"
 
-    log_message "INFO" "（1）起動引数の個数チェック"
+    log_message "TRACE" "（1）起動引数の個数チェック"
     # 環境情報ファイルのパスを引数から取得
     if [ $# -eq 0 ]; then
         log_message "ERROR" "環境情報ファイルのパスが指定されていません"
         exit 1
     fi
 
-    log_message "INFO" "（2）設定パラメータ設定"
+    log_message "TRACE" "（2）設定パラメータ設定"
     SHELL_PRM_FILE_PATH="$1"
     if [ ! -f "$SHELL_PRM_FILE_PATH" ]; then
         log_message "ERROR" "環境情報ファイル $SHELL_PRM_FILE_PATH が存在しません"
@@ -462,21 +463,21 @@ main() {
 
     # これ以降、log_message 関数が使用可能になる
 
-    log_message "INFO" "（3）バッチ処理共通定義の読み込み"
+    log_message "TRACE" "（3）バッチ処理共通定義の読み込み"
     # バッチ処理共通定義ファイルのパスを設定
     ${GYOMU_ROOT}/config/Bs1SFF1010020CommonDef.sh
 
-    log_message "INFO" "（4）環境情報ファイルの存在チェック"
+    log_message "TRACE" "（4）環境情報ファイルの存在チェック"
     if [ ! -f "$SHELL_PRM_FILE_PATH" ]; then
         temp_log "ERROR" "環境情報ファイルが存在しません: $SHELL_PRM_FILE_PATH"
         exit 1
     fi
 
-    log_message "INFO" "（5）環境情報ファイルの読み込み"
+    log_message "TRACE" "（5）環境情報ファイルの読み込み"
 
     log_message "DEBUG" "環境情報ファイルを読み込みました: $SHELL_PRM_FILE_PATH"
 
-    log_message "INFO" "（6）業務変数の定義"
+    log_message "TRACE" "（6）業務変数の定義"
     JOB_NAME="EAM (GIS) 提供用転送形式変換 (地形図)"
 
     # 必須パラメータの確認
@@ -509,17 +510,17 @@ main() {
     GIS_CHIKEI_TRANS_BACK_DIR="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_BACK_DIR"
 
 
-    log_message "INFO" "（7）開始メッセージ出力"
+    log_message "TRACE" "（7）開始メッセージ出力"
     log_message "INFO" "$JOB_NAME を開始します。"
 
-    log_message "INFO" "（8）転送指示結果ファイル存在チェック"
+    log_message "TRACE" "（8）転送指示結果ファイル存在チェック"
     if [ ! -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
         log_message "WARN" "S1ZZZZW0002 ファイル未存在。$GIS_CHIKEI_TRANS_RESULT_FILE"
         log_message "INFO" "転送指示結果ファイルが存在しないため、処理をスキップして正常終了します。"
         exit 100  # 特別な終了コードを使用
     fi
 
-    log_message "INFO" "（9）ファイル圧縮用ワークディレクトリ削除"
+    log_message "TRACE" "（9）ファイル圧縮用ワークディレクトリ削除"
     if [ -d "$GIS_CHIKEI_TRANS_WORK_DIR" ]; then
         if rm -rf "$GIS_CHIKEI_TRANS_WORK_DIR"; then
             log_message "INFO" "ファイル圧縮用ワークディレクトリを削除しました: $GIS_CHIKEI_TRANS_WORK_DIR"
@@ -530,7 +531,7 @@ main() {
         log_message "DEBUG" "削除するファイル圧縮用ワークディレクトリが存在しません: $GIS_CHIKEI_TRANS_WORK_DIR"
     fi
 
-    log_message "INFO" "（10）転送指示結果ファイル読込み"
+    log_message "TRACE" "（10）転送指示結果ファイル読込み"
     if [ -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
         # ファイルの内容を読み込む
         local file_content
@@ -563,28 +564,28 @@ main() {
         exit 9
     fi
 
-    log_message "INFO" "（11）転送済みファイルバックアップ"
+    log_message "TRACE" "（11）転送済みファイルバックアップ"
     backup_transferred_file || log_message "ERROR" "転送済みファイルのバックアップに失敗しました"
 
-    log_message "INFO" "（12）転送指示情報ファイル更新"
+    log_message "TRACE" "（12）転送指示情報ファイル更新"
     update_transfer_instruction_info || log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
 
-    log_message "INFO" "（13）シェープファイル収集"
+    log_message "TRACE" "（13）シェープファイル収集"
     collect_shape_files || log_message "ERROR" "シェープファイルの収集に失敗しました"
 
-    log_message "INFO" "（14）更新メッシュファイルリスト作成"
+    log_message "TRACE" "（14）更新メッシュファイルリスト作成"
     create_update_mesh_list || log_message "ERROR" "更新メッシュファイルリストの作成に失敗しました"
 
-    log_message "INFO" "（15）転送用圧縮ファイルの作成"
+    log_message "TRACE" "（15）転送用圧縮ファイルの作成"
     create_transfer_compressed_file || log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
 
-    log_message "INFO" "（16）転送指示情報ファイル更新"
+    log_message "TRACE" "（16）転送指示情報ファイル更新"
     update_transfer_instruction_info_after || log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
 
-    log_message "INFO" "（17）シェープファイル削除"
+    log_message "TRACE" "（17）シェープファイル削除"
     delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
 
-    log_message "INFO" "（18）転送指示結果ファイル削除"
+    log_message "TRACE" "（18）転送指示結果ファイル削除"
     if [ -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
         if rm "$GIS_CHIKEI_TRANS_RESULT_FILE"; then
             log_message "DEBUG" "転送指示結果ファイルを削除しました: $GIS_CHIKEI_TRANS_RESULT_FILE"
@@ -595,7 +596,7 @@ main() {
         log_message "WARN" "削除する転送指示結果ファイルが存在しません: $GIS_CHIKEI_TRANS_RESULT_FILE"
     fi
 
-    log_message "INFO" "（19）終了処理"
+    log_message "TRACE" "（19）終了処理"
     if [ $ERROR_COUNT -eq 0 ]; then
         log_message "INFO" "$JOB_NAME が正常に完了しました"
         exit 0
