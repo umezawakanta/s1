@@ -10,8 +10,8 @@ ERROR_COUNT=0
 
 # ログレベルの定義
 declare -A LOG_LEVELS=(
-  ["TRACE"]=0
-  ["DEBUG"]=1
+  ["TRACE"]=1
+  ["DEBUG"]=0
   ["INFO"]=2
   ["WARN"]=3
   ["ERROR"]=4
@@ -86,6 +86,7 @@ create_dir_if_not_exists() {
 
 # シェープファイル収集処理
 collect_shape_files() {
+    log_message "TRACE" "collect_shape_files() start"
     log_message "DEBUG" "シェープファイルの収集を開始します"
     
     local copy_success=false
@@ -169,6 +170,7 @@ collect_shape_files() {
     fi
     
     log_message "DEBUG" "シェープファイルの収集が完了しました"
+    log_message "TRACE" "collect_shape_files() end"
     return 0
 }
 
@@ -218,6 +220,7 @@ create_update_mesh_list() {
 
 # 転送用圧縮ファイルの作成
 create_transfer_compressed_file() {
+    log_message "TRACE" "create_transfer_compressed_file() start"
     log_message "DEBUG" "転送用圧縮ファイルを作成中"
     create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_COMP_FILE")"
     
@@ -226,7 +229,7 @@ create_transfer_compressed_file() {
         
     # WORK_DIRに移動してtar作成
     cd "$GIS_CHIKEI_TRANS_WORK_DIR" || return 1
-    
+    log_message "TRACE" "create_transfer_compressed_file() end"    
     if log_and_execute "tar -czf \"$GIS_CHIKEI_TRANS_COMP_FILE\" *"; then
         log_message "DEBUG" "転送用圧縮ファイルを作成しました: $GIS_CHIKEI_TRANS_COMP_FILE"
         cd "$current_dir" || return 1
@@ -241,6 +244,7 @@ create_transfer_compressed_file() {
 
 # シェープファイル削除
 delete_shape_files() {
+    log_message "TRACE" "delete_shape_files() start"
     log_message "DEBUG" "シェープファイルを削除中"
     if [ -d "$GIS_CHIKEI_TRANS_WORK_DIR" ]; then
         log_message "DEBUG" "ファイル圧縮用ワークディレクトリを削除: $GIS_CHIKEI_TRANS_WORK_DIR"
@@ -253,10 +257,12 @@ delete_shape_files() {
     else
         log_message "WARN" "削除するシェープファイルが見つかりません: $GIS_CHIKEI_TRANS_WORK_DIR"
     fi
+    log_message "TRACE" "delete_shape_files() end"
 }
 
 # 転送済みファイルのバックアップ
 backup_transferred_file() {
+    log_message "TRACE" "backup_transferred_file() start"
     log_message "DEBUG" "転送済みファイルのバックアップを開始します"
     
     # 転送指示結果ファイルの存在確認
@@ -327,11 +333,13 @@ backup_transferred_file() {
 
     log_message "DEBUG" "バックアップを3世代まで保持しました"
     log_message "DEBUG" "転送済みファイルのバックアップが完了しました"
+    log_message "TRACE" "backup_transferred_file() end"
     return 0
 }
 
 # 転送指示情報の更新
 update_transfer_instruction_info() {
+    log_message "TRACE" "update_transfer_instruction_info() start"
     log_message "DEBUG" "転送指示情報の更新処理を開始します"
 
     if [ ! -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
@@ -373,10 +381,12 @@ update_transfer_instruction_info() {
     fi
 
     log_message "DEBUG" "転送指示情報の更新処理が完了しました"
+    log_message "TRACE" "update_transfer_instruction_info() end"
 }
 
 # 転送指示情報の更新
 update_transfer_instruction_info_after() {
+    log_message "TRACE" "update_transfer_instruction_info_after() start"
     log_message "DEBUG" "転送指示情報の更新処理を開始します"
 
     # 転送用圧縮ファイルの存在確認
@@ -432,6 +442,7 @@ update_transfer_instruction_info_after() {
     fi
 
     log_message "DEBUG" "転送指示情報の更新処理が完了しました"
+    log_message "TRACE" "update_transfer_instruction_info_after() end"
     return 0
 }
 
@@ -439,11 +450,11 @@ update_transfer_instruction_info_after() {
 main() {
     # ログファイルの設定
     LOG_FILE="log/process.log"
-    LOG_LEVEL=INFO
+    LOG_LEVEL=TRACE
 
     # ログファイルのディレクトリを作成
     mkdir -p "$(dirname "$LOG_FILE")"
-
+    log_message "TRACE" "main() start"
     log_message "TRACE" "（1）起動引数の個数チェック"
     # 環境情報ファイルのパスを引数から取得
     if [ $# -eq 0 ]; then
@@ -597,6 +608,7 @@ main() {
     fi
 
     log_message "TRACE" "（19）終了処理"
+    log_message "TRACE" "main() end"
     if [ $ERROR_COUNT -eq 0 ]; then
         log_message "INFO" "$JOB_NAME が正常に完了しました"
         exit 0

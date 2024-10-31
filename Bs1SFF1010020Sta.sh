@@ -23,8 +23,8 @@ fi
 
 # ログレベルの定義
 declare -A LOG_LEVELS=(
-  ["TRACE"]=0
-  ["DEBUG"]=1
+  ["TRACE"]=1
+  ["DEBUG"]=0
   ["INFO"]=2
   ["WARN"]=3
   ["ERROR"]=4
