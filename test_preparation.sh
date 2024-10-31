@@ -176,7 +176,7 @@ else
 fi
 
 # 実行シェルの呼び出し
-EXECUTOR_SCRIPT="./Bs1SFF1010020Sta.sh"
+EXECUTOR_SCRIPT=$STARTER_SCRIPT
 if [ -f "$EXECUTOR_SCRIPT" ]; then
     log_message "INFO" "起動シェルを呼び出します: $EXECUTOR_SCRIPT"
     "$EXECUTOR_SCRIPT" "$CONFIG_FILE"

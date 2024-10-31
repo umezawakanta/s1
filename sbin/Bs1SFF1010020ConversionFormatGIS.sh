@@ -64,21 +64,21 @@ collect_shape_files() {
     
     # 更新メッシュファイルリストを初期化
     log_message "INFO" "更新メッシュファイルリストを初期化"
-    create_dir_if_not_exists "$(dirname "$UPDATE_MESH_LIST")"
-    log_and_execute ": > \"$UPDATE_MESH_LIST\""
+    create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_MESH_FILE")"
+    log_and_execute ": > \"$GIS_CHIKEI_MESH_FILE\""
     
     # 支店番号ディレクトリを検索
     local shiten_dirs=(2010000 2020000 2030000 2040000 2050000 2060000 2070000 2080000 2090000 2140000)
     
     for shiten_dir in "${shiten_dirs[@]}"; do
-        if [ ! -d "${SHAPE_FILES_ROOT}/$shiten_dir" ]; then
-            log_message "WARN" "$shiten_dir ディレクトリが見つかりません: ${SHAPE_FILES_ROOT}/$shiten_dir"
+        if [ ! -d "${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir" ]; then
+            log_message "WARN" "$shiten_dir ディレクトリが見つかりません: ${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir"
             continue
         fi
         
-        log_message "INFO" "ディレクトリを検索 : ${SHAPE_FILES_ROOT}/$shiten_dir"
-        log_message "DEBUG" "${SHAPE_FILES_ROOT}/$shiten_dir の内容:"
-        log_and_execute "ls -R \"${SHAPE_FILES_ROOT}/$shiten_dir\""
+        log_message "INFO" "ディレクトリを検索 : ${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir"
+        log_message "DEBUG" "${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir の内容:"
+        log_and_execute "ls -R \"${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir\""
         
         # システムディレクトリを決定
         local sys_dir
@@ -89,7 +89,7 @@ collect_shape_files() {
         fi
         
         # 図面番号ディレクトリを検索
-        for mesh_dir in "${SHAPE_FILES_ROOT}/$shiten_dir"/*; do
+        for mesh_dir in "${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir"/*; do
             if [ ! -d "$mesh_dir" ]; then
                 log_message "DEBUG" "スキップされたディレクトリ: $mesh_dir"
                 continue
@@ -116,7 +116,7 @@ collect_shape_files() {
             if log_and_execute "$find_command"; then
                 log_message "INFO" "図面番号 ${mesh_number} のシェープファイルを正常に複写しました"
                 # 更新メッシュファイルリストに図面番号を追加
-                log_and_execute "echo \"${mesh_number}\" >> \"$UPDATE_MESH_LIST\""
+                log_and_execute "echo \"${mesh_number}\" >> \"$GIS_CHIKEI_MESH_FILE\""
                 log_message "DEBUG" "更新メッシュファイルリストに追加: $mesh_number"
                 copy_success=true
             else
@@ -128,8 +128,8 @@ collect_shape_files() {
     done
     
     # 更新メッシュファイルリストの確認
-    if [ -s "$UPDATE_MESH_LIST" ]; then
-        log_message "INFO" "更新メッシュファイルリストを作成しました: $UPDATE_MESH_LIST"
+    if [ -s "$GIS_CHIKEI_MESH_FILE" ]; then
+        log_message "INFO" "更新メッシュファイルリストを作成しました: $GIS_CHIKEI_MESH_FILE"
     else
         log_message "ERROR" "更新メッシュファイルリストが空です"
         return 1
@@ -148,29 +148,29 @@ collect_shape_files() {
 create_update_mesh_list() {
     log_message "INFO" "作成した更新メッシュリストから重複した図面番号を削除してソートする"
     
-    if [ ! -f "$UPDATE_MESH_LIST" ]; then
-        log_message "ERROR" "更新メッシュファイルリストが見つかりません: $UPDATE_MESH_LIST"
+    if [ ! -f "$GIS_CHIKEI_MESH_FILE" ]; then
+        log_message "ERROR" "更新メッシュファイルリストが見つかりません: $GIS_CHIKEI_MESH_FILE"
         return 1
     fi
     
     # 一時ファイルを作成
-    local temp_file="${UPDATE_MESH_LIST}.tmp"
+    local temp_file="${GIS_CHIKEI_MESH_FILE}.tmp"
     
     # ファイルをソートし、重複を削除
-    if sort -u "$UPDATE_MESH_LIST" > "$temp_file"; then
+    if sort -u "$GIS_CHIKEI_MESH_FILE" > "$temp_file"; then
         log_message "DEBUG" "更新メッシュファイルリストをソートし、重複を削除しました"
         
         # 元のファイルを一時ファイルで置き換え
-        if mv "$temp_file" "$UPDATE_MESH_LIST"; then
-            log_message "INFO" "更新メッシュファイルリストを更新しました: $UPDATE_MESH_LIST"
+        if mv "$temp_file" "$GIS_CHIKEI_MESH_FILE"; then
+            log_message "INFO" "更新メッシュファイルリストを更新しました: $GIS_CHIKEI_MESH_FILE"
             
             # 処理結果の確認
-            local line_count=$(wc -l < "$UPDATE_MESH_LIST")
+            local line_count=$(wc -l < "$GIS_CHIKEI_MESH_FILE")
             log_message "INFO" "更新メッシュファイルリストの行数: $line_count"
             
             if [ "$line_count" -gt 0 ]; then
                 log_message "DEBUG" "更新メッシュファイルリストの内容:"
-                log_and_execute "cat \"$UPDATE_MESH_LIST\""
+                log_and_execute "cat \"$GIS_CHIKEI_MESH_FILE\""
                 return 0
             else
                 log_message "ERROR" "更新メッシュファイルリストが空です"
@@ -205,7 +205,7 @@ create_transfer_compressed_file() {
         return 0
     else
         log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
-        rm -f "$(basename "$UPDATE_MESH_LIST")"  # コピーしたメッシュリストを削除
+        rm -f "$(basename "$GIS_CHIKEI_MESH_FILE")"  # コピーしたメッシュリストを削除
         cd "$current_dir" || return 1
         return 1
     fi
@@ -243,7 +243,7 @@ backup_transferred_file() {
 
     # 転送指示結果ファイルのバックアップ名を生成（日付サフィックス付き）
     local current_date=$(date +%Y%m%d%H%M%S)
-    local result_backup_name="${GIS_CHIKEI_TRANS_FILE}_${current_date}"
+    local result_backup_name="${GIS_CHIKEI_TRANS_FILE_NAME}_${current_date}"
     
     # 転送指示結果ファイルをバックアップ
     if cp "$GIS_CHIKEI_TRANS_RESULT_FILE" "$backup_dir/$result_backup_name"; then
@@ -288,7 +288,7 @@ backup_transferred_file() {
     fi
 
     # 転送指示結果ファイルのバックアップ
-    local result_backup_files=("$GIS_CHIKEI_TRANS_BACK_DIR"/${GIS_CHIKEI_TRANS_FILE}_*)
+    local result_backup_files=("$GIS_CHIKEI_TRANS_BACK_DIR"/${GIS_CHIKEI_TRANS_FILE_NAME}_*)
     if [ ${#result_backup_files[@]} -gt $GIS_CHIKEI_COMP_BAK_SEDAI ]; then
         IFS=$'\n' sorted_result_files=($(ls -t "${result_backup_files[@]}"))
         for old_file in "${sorted_result_files[@]:$GIS_CHIKEI_COMP_BAK_SEDAI}"; do
@@ -491,7 +491,7 @@ main() {
 
     # 必須パラメータの確認
     required_params=(
-        "SHAPE_FILES_ROOT" "GIS_CHIKEI_TRANS_WORK_DIR" "UPDATE_MESH_LIST"
+        "GIS_CHIKEI_SHAPE_DIR" "GIS_CHIKEI_TRANS_WORK_DIR" "GIS_CHIKEI_MESH_FILE"
         "GIS_CHIKEI_TRANS_RESULT_FILE" "GIS_CHIKEI_TRANS_INFO_FILE" "GIS_CHIKEI_TRANS_COMP_FILE"
         "GIS_CHIKEI_TRANS_BACK_DIR" "GYOMU_ROOT"
     )
@@ -510,9 +510,9 @@ main() {
 
     # 各パラメータにGYOMU_ROOTを適用
     LOG_FILE="$GYOMU_ROOT/$LOG_FILE"
-    SHAPE_FILES_ROOT="$GYOMU_ROOT/$SHAPE_FILES_ROOT"
+    GIS_CHIKEI_SHAPE_DIR="$GYOMU_ROOT/$GIS_CHIKEI_SHAPE_DIR"
     GIS_CHIKEI_TRANS_WORK_DIR="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_WORK_DIR"
-    UPDATE_MESH_LIST="$GYOMU_ROOT/$UPDATE_MESH_LIST"
+    GIS_CHIKEI_MESH_FILE="$GYOMU_ROOT/$GIS_CHIKEI_MESH_FILE"
     GIS_CHIKEI_TRANS_RESULT_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_RESULT_FILE"
     GIS_CHIKEI_TRANS_INFO_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_INFO_FILE"
     GIS_CHIKEI_TRANS_COMP_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_FILE"
