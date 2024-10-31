@@ -17,7 +17,7 @@ create_required_directories() {
     local dirs=(
         "$(dirname "$TEST_LOG_FILE")"
         "result"
-        "FT"
+        $GIS_CHIKEI_TRANS_COMP_DIR
         "back"
         "inf"
         "log"
@@ -75,15 +75,15 @@ fi
 mkdir -p "$(dirname "$TEST_LOG_FILE")"
 log_message "INFO" "$JOB_NAME を開始します。"
 
-# 必要なディレクトリを作成
-create_required_directories
-
 # コンフィグファイルの読み込み
 if [ ! -f "$CONFIG_FILE" ]; then
     log_message "ERROR" "コンフィグファイルが見つかりません: $CONFIG_FILE"
     exit 1
 fi
 source "$CONFIG_FILE"
+
+# 必要なディレクトリを作成
+create_required_directories
 
 # GYOMU_ROOTを絶対パスに変換
 if [[ "$GYOMU_ROOT" != /* ]]; then
@@ -144,8 +144,8 @@ if [ ${#compressed_files[@]} -gt 0 ]; then
         # ローカルファイル
         local_file="$GIS_CHIKEI_GIS_COMP_DIR$file_name"
         
-        # リモートファイル（転送先の絶対パス）
-        remote_file="$GYOMU_ROOT/FT/$file_name"
+        # リモートファイル
+        remote_file="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_DIR/$file_name"
         
         # ステータス
         status="1"
@@ -170,7 +170,7 @@ if [ ${#compressed_files[@]} -gt 0 ]; then
 else
     log_message "WARN" "転送用圧縮ファイルが見つかりません。サンプルデータを使用します。"
     # サンプルデータで作成
-    echo "1,$GIS_CHIKEI_DENSO_CARD,${GIS_CHIKEI_GIS_COMP_DIR}B003KY_20241030173959.tar.gz,$GYOMU_ROOT/FT/B003KY_20241030173959.tar.gz,0,chikei,20241030173959" > "$GIS_CHIKEI_TRANS_RESULT_FILE"
+    echo "1,$GIS_CHIKEI_DENSO_CARD,${GIS_CHIKEI_GIS_COMP_DIR}B003KY_20241030173959.tar.gz,$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_DIR/B003KY_20241030173959.tar.gz,0,chikei,20241030173959" > "$GIS_CHIKEI_TRANS_RESULT_FILE"
 fi
 
 # 起動シェルの呼び出し

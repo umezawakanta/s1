@@ -254,10 +254,10 @@ backup_transferred_file() {
     fi
 
     # 転送指示結果ファイルを1行ずつ処理
-    while IFS=',' read -r file_name update_date local_file remote_file status comment timestamp || [ -n "$file_name" ]; do
+    while IFS=',' read -r registration_number card_name local_file remote_file status comment timestamp || [ -n "$remote_file" ]; do
         # ステータスが転送済み（0）かチェック
         if [ "$status" != "0" ]; then
-            log_message "INFO" "ファイルは転送済みではありません。スキップします: $file_name"
+            log_message "INFO" "ファイルは転送済みではありません。スキップします: $remote_file"
             continue
         fi
 
@@ -302,44 +302,6 @@ backup_transferred_file() {
     return 0
 }
 
-# 転送指示結果ファイルの処理
-process_transfer_instruction_result() {
-    log_message "INFO" "転送指示結果ファイルの処理を開始します"
-
-    if [ ! -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
-        log_message "ERROR" "転送指示結果ファイルが見つかりません: $GIS_CHIKEI_TRANS_RESULT_FILE"
-        return 1
-    fi
-
-    log_message "DEBUG" "転送指示結果ファイルの内容:"
-    log_and_execute "cat \"$GIS_CHIKEI_TRANS_RESULT_FILE\""
-
-    # 転送指示結果ファイルの読み込み
-    local file_content=$(cat "$GIS_CHIKEI_TRANS_RESULT_FILE")
-    IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
-
-    log_message "DEBUG" "ファイル名: $file_name"
-    log_message "DEBUG" "更新日: $update_date"
-    log_message "DEBUG" "ステータス: $status"
-
-    # ステータスの確認
-    if [ "$status" = "0" ]; then
-        log_message "INFO" "転送が正常に完了しました（ステータス: $status）"
-    else
-        log_message "ERROR" "転送中にエラーが発生しました（ステータス: $status）"
-    fi
-
-    # 転送指示結果ファイルの削除
-    if log_and_execute "rm \"$GIS_CHIKEI_TRANS_RESULT_FILE\""; then
-        log_message "INFO" "転送指示結果ファイルを削除しました: $GIS_CHIKEI_TRANS_RESULT_FILE"
-    else
-        log_message "ERROR" "転送指示結果ファイルの削除に失敗しました: $GIS_CHIKEI_TRANS_RESULT_FILE"
-        return 1
-    fi
-
-    log_message "INFO" "転送指示結果ファイルの処理が完了しました"
-}
-
 # 転送指示情報の更新
 update_transfer_instruction_info() {
     log_message "INFO" "転送指示情報の更新処理を開始します"
@@ -356,7 +318,7 @@ update_transfer_instruction_info() {
     > "$GIS_CHIKEI_TRANS_INFO_FILE"
 
     # 転送指示結果ファイルを1行ずつ処理
-    while IFS=',' read -r file_name update_date local_file remote_file status comment timestamp || [ -n "$file_name" ]; do
+    while IFS=',' read -r registration_number card_name local_file remote_file status comment timestamp || [ -n "$remote_file" ]; do
         # タイムスタンプの修正
         timestamp=$(echo "$timestamp" | cut -c 1-14)
         
@@ -366,13 +328,13 @@ update_transfer_instruction_info() {
             
             # 新しい行を作成
             # 転送指示情報ファイルのステータスは0固定
-            local new_line="$file_name,$update_date,$local_file,$remote_file,0,$comment,$timestamp"
+            local new_line="$registration_number,$card_name,$local_file,$remote_file,0,$comment,$timestamp"
             
             # 転送指示情報ファイルに追加
             echo "$new_line" >> "$GIS_CHIKEI_TRANS_INFO_FILE"
-            log_message "INFO" "転送指示情報ファイルに追加しました: $file_name"
+            log_message "INFO" "転送指示情報ファイルに追加しました: $remote_file"
         else
-            log_message "INFO" "ステータスが転送済みです。このファイルはスキップします: $file_name"
+            log_message "INFO" "ステータスが転送済みです。このファイルはスキップします: $remote_file"
         fi
     done < "$GIS_CHIKEI_TRANS_RESULT_FILE"
 
@@ -419,7 +381,7 @@ update_transfer_instruction_info_after() {
     local local_file="$GIS_CHIKEI_GIS_COMP_DIR$file_name"
     
     # リモートファイル名
-    local remote_file="$GYOMU_ROOT/FT/$file_name"
+    local remote_file="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_DIR/$file_name"
     
     # ステータス（1固定）
     local status="1"
@@ -548,12 +510,12 @@ main() {
             log_message "INFO" "転送指示結果ファイルを読み込みました: $GIS_CHIKEI_TRANS_RESULT_FILE"
             
             # ファイルの内容を解析
-            IFS=',' read -r file_name update_date local_file remote_file status comment timestamp <<< "$file_content"
+            IFS=',' read -r registration_number card_name local_file remote_file status comment timestamp <<< "$file_content"
             
-            log_message "DEBUG" "ファイル名: $file_name"
-            log_message "DEBUG" "更新日: $update_date"
-            log_message "DEBUG" "ローカルファイル: $local_file"
-            log_message "DEBUG" "リモートファイル: $remote_file"
+            log_message "DEBUG" "登録番号: $registration_number"
+            log_message "DEBUG" "伝送カード名: $card_name"
+            log_message "DEBUG" "ローカルファイル名: $local_file"
+            log_message "DEBUG" "リモートファイル名: $remote_file"
             log_message "DEBUG" "ステータス: $status"
             log_message "DEBUG" "コメント: $comment"
             log_message "DEBUG" "タイムスタンプ: $timestamp"
