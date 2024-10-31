@@ -2,7 +2,7 @@
 # スクリプトのパス
 #=========================================
 STARTER_SCRIPT=./Bs1SFF1010020Sta.sh
-EXECUTOR_SCRIPT=sbin/file_processor.sh
+EXECUTOR_SCRIPT=sbin/Bs1SFF1010020ConversionFormatGIS.sh
 COMMON_DEF_SCRIPT=config/Bs1SFF1010020CommonDef.sh
 
 #=========================================

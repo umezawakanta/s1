@@ -11,8 +11,9 @@ source config/batchenv_sjis.sh
 source config/batch.profile
 source config/APFW_ENV
 
-# コンフィグファイルのパス
+# 環境情報ファイルのパス
 CONFIG_FILE="config/Bs1SFF1010020GIS.prm"
+source $CONFIG_FILE
 
 # ユーザー権限チェック
 if [ "$(id -u)" -eq 0 ] || [ "$(id -u)" -ge 60000 ]; then
@@ -27,8 +28,8 @@ log_message() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     local log_entry
     case $level in
-        "START") log_entry="[$level] $message" ;;
-        "END") log_entry="[$level] $message" ;;
+        "INFO") log_entry="[$level] $message" ;;
+        "INFO") log_entry="[$level] $message" ;;
         "ERROR") log_entry="[$level] $message" ;;
         "INFO") log_entry="[$level] $message" ;;
         "WARN") log_entry="[$level] $message" ;;
@@ -40,10 +41,9 @@ log_message() {
 }
 
 # 開始ログ
-log_message "START" "$JOB_NAME を開始します。"
+log_message "INFO" "$JOB_NAME を開始します。"
 
 # 実行シェルの呼び出し
-EXECUTOR_SCRIPT="sbin/Bs1SFF1010020ConversionFormatGIS.sh"
 if [ -f "$EXECUTOR_SCRIPT" ]; then
     log_message "INFO" "実行シェルを呼び出します: $EXECUTOR_SCRIPT"
     "$EXECUTOR_SCRIPT" "$CONFIG_FILE"
@@ -56,10 +56,10 @@ fi
 
 # 終了ステータスの処理
 if [ $EXIT_STATUS -eq 0 ]; then
-    log_message "END" "$JOB_NAME が正常終了しました。終了ステータス: $EXIT_STATUS"
+    log_message "INFO" "$JOB_NAME が正常終了しました。終了ステータス: $EXIT_STATUS"
     exit 0
 elif [ $EXIT_STATUS -eq 100 ]; then
-    log_message "END" "$JOB_NAME が正常終了しました（転送指示結果ファイルなし）。終了ステータス: $EXIT_STATUS"
+    log_message "INFO" "$JOB_NAME が正常終了しました（転送指示結果ファイルなし）。終了ステータス: $EXIT_STATUS"
     exit 0
 else
     log_message "ERROR" "$JOB_NAME が異常終了しました。終了ステータス: $EXIT_STATUS"

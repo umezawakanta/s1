@@ -38,8 +38,6 @@ log_message() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     local log_entry
     case $level in
-        "START") log_entry="[$level] $message" ;;
-        "END") log_entry="[$level] $message" ;;
         "ERROR") log_entry="[$level] $message" ;;
         "INFO") log_entry="[$level] $message" ;;
         "WARN") log_entry="[$level] $message" ;;
@@ -75,7 +73,7 @@ fi
 
 # 開始ログ
 mkdir -p "$(dirname "$TEST_LOG_FILE")"
-log_message "START" "$JOB_NAME を開始します。"
+log_message "INFO" "$JOB_NAME を開始します。"
 
 # 必要なディレクトリを作成
 create_required_directories
@@ -175,21 +173,20 @@ else
     echo "1,$GIS_CHIKEI_DENSO_CARD,${GIS_CHIKEI_GIS_COMP_DIR}B003KY_20241030173959.tar.gz,$GYOMU_ROOT/FT/B003KY_20241030173959.tar.gz,0,chikei,20241030173959" > "$GIS_CHIKEI_TRANS_RESULT_FILE"
 fi
 
-# 実行シェルの呼び出し
-EXECUTOR_SCRIPT=$STARTER_SCRIPT
-if [ -f "$EXECUTOR_SCRIPT" ]; then
-    log_message "INFO" "起動シェルを呼び出します: $EXECUTOR_SCRIPT"
-    "$EXECUTOR_SCRIPT" "$CONFIG_FILE"
+# 起動シェルの呼び出し
+if [ -f "$STARTER_SCRIPT" ]; then
+    log_message "INFO" "起動シェルを呼び出します: $STARTER_SCRIPT"
+    "$STARTER_SCRIPT" "$CONFIG_FILE"
     EXIT_STATUS=$?
     log_message "DEBUG" "起動シェルの実行が完了しました。終了ステータス: $EXIT_STATUS"
 else
-    log_message "ERROR" "起動シェルが見つかりません: $EXECUTOR_SCRIPT"
+    log_message "ERROR" "起動シェルが見つかりません: $STARTER_SCRIPT"
     EXIT_STATUS=1
 fi
 
 # 終了ステータスの処理
 if [ $EXIT_STATUS -eq 0 ]; then
-    log_message "END" "$JOB_NAME が正常終了しました。終了ステータス: $EXIT_STATUS"
+    log_message "INFO" "$JOB_NAME が正常終了しました。終了ステータス: $EXIT_STATUS"
 else
     log_message "ERROR" "$JOB_NAME が異常終了しました。終了ステータス: $EXIT_STATUS"
 fi
