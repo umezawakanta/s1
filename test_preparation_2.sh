@@ -11,6 +11,7 @@ JOB_NAME="EAM (GIS) 提供用転送形式変換 (地形図) テスト準備 2"
 
 # ログファイルの設定
 TEST_LOG_FILE="log/test_preparation_2.log"
+LOG_LEVEL=INFO
 
 # 必要なディレクトリを作成する関数
 create_required_directories() {
@@ -31,21 +32,33 @@ create_required_directories() {
     done
 }
 
-# ログ出力関数
+# ログレベルの定義
+declare -A LOG_LEVELS=(
+  ["DEBUG"]=0
+  ["INFO"]=1
+  ["WARN"]=2
+  ["ERROR"]=3
+)
+
+# メッセージをログに記録する関数
 log_message() {
     local level=$1
     local message=$2
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local log_entry
-    case $level in
-        "ERROR") log_entry="[$level] $message" ;;
-        "INFO") log_entry="[$level] $message" ;;
-        "WARN") log_entry="[$level] $message" ;;
-        "DEBUG") log_entry="[$level] $message" ;;
-        *) log_entry="[INFO] $message" ;;
-    esac
-    echo "$timestamp $log_entry"
-    echo "$timestamp $log_entry" >> "$TEST_LOG_FILE"
+    local file_name=${BASH_SOURCE[1]##*/}
+    local line_number=${BASH_LINENO[0]}
+
+    # 設定されたログレベルに基づいてメッセージをフィルタリング
+    if [ "${LOG_LEVELS[$level]}" -ge "${LOG_LEVELS[$LOG_LEVEL]}" ]; then
+        local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+        local file_info=$(printf "[%-20s:%-4s]" "${file_name:0:20}" "${line_number:0:4}")
+        local log_entry="$timestamp [$level] $file_info $message"
+        echo "$log_entry"
+        echo "$log_entry" >> "$TEST_LOG_FILE"
+        
+        if [ "$level" = "ERROR" ]; then
+            ((ERROR_COUNT++))
+        fi
+    fi
 }
 
 # 設定ファイルの読み込み
@@ -88,7 +101,7 @@ create_required_directories
 # GYOMU_ROOTを絶対パスに変換
 if [[ "$GYOMU_ROOT" != /* ]]; then
     GYOMU_ROOT="$(cd "$GYOMU_ROOT" && pwd)"
-    log_message "INFO" "GYOMU_ROOTを絶対パスに変換しました: $GYOMU_ROOT"
+    log_message "DEBUG" "GYOMU_ROOTを絶対パスに変換しました: $GYOMU_ROOT"
 fi
 
 # 転送用圧縮ファイル格納フォルダのパスを設定

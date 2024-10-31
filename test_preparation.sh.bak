@@ -160,7 +160,7 @@ if [ ${#compressed_files[@]} -gt 0 ]; then
         # リモートファイル
         remote_file="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_DIR/$file_name"
         
-        # ステータス
+        # ステータス（0固定）
         status="0"
         
         # コメント（chikei固定）

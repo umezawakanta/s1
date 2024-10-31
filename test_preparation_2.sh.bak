@@ -7,11 +7,10 @@ set -e
 set -u
 
 # ジョブ名の設定
-JOB_NAME="EAM (GIS) 提供用転送形式変換 (地形図) テスト準備"
+JOB_NAME="EAM (GIS) 提供用転送形式変換 (地形図) テスト準備 2"
 
 # ログファイルの設定
-TEST_LOG_FILE="log/test_preparation.log"
-LOG_LEVEL=INFO
+TEST_LOG_FILE="log/test_preparation_2.log"
 
 # 必要なディレクトリを作成する関数
 create_required_directories() {
@@ -53,7 +52,7 @@ log_message() {
         local file_info=$(printf "[%-20s:%-4s]" "${file_name:0:20}" "${line_number:0:4}")
         local log_entry="$timestamp [$level] $file_info $message"
         echo "$log_entry"
-        echo "$log_entry" >> "$TEST_LOG_FILE"
+        echo "$log_entry" >> "$LOG_FILE"
         
         if [ "$level" = "ERROR" ]; then
             ((ERROR_COUNT++))
@@ -161,7 +160,7 @@ if [ ${#compressed_files[@]} -gt 0 ]; then
         remote_file="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_DIR/$file_name"
         
         # ステータス
-        status="0"
+        status="1"
         
         # コメント（chikei固定）
         comment="chikei"
