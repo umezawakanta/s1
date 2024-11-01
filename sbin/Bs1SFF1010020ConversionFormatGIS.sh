@@ -262,18 +262,68 @@ create_transfer_compressed_file() {
 delete_shape_files() {
     log_message "TRACE" "delete_shape_files() start"
     log_message "DEBUG" "シェープファイルを削除中"
+
+    # 更新メッシュ一覧ファイルの存在確認
+    if [ ! -f "$GIS_CHIKEI_MESH_FILE" ]; then
+        log_message "ERROR" "更新メッシュ一覧ファイルが見つかりません: $GIS_CHIKEI_MESH_FILE"
+        return 1
+    fi
+
+    # 更新メッシュ一覧ファイルから図面番号を読み込み
+    log_message "DEBUG" "更新メッシュ一覧ファイルから図面番号を読み込みます"
+    local mesh_numbers=()
+    while IFS= read -r mesh_number; do
+        mesh_numbers+=("$mesh_number")
+    done < "$GIS_CHIKEI_MESH_FILE"
+
+    if [ ${#mesh_numbers[@]} -eq 0 ]; then
+        log_message "ERROR" "更新メッシュ一覧ファイルが空です"
+        return 1
+    fi
+
+    log_message "DEBUG" "削除対象の図面番号: ${mesh_numbers[*]}"
+
+    # 支店ディレクトリごとに処理
+    local shiten_dirs=(2010000 2020000 2030000 2040000 2050000 2060000 2070000 2080000 2090000 2140000)
+    
+    for shiten_dir in "${shiten_dirs[@]}"; do
+        if [ ! -d "${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir" ]; then
+            continue
+        fi
+
+        log_message "DEBUG" "支店ディレクトリを処理中: $shiten_dir"
+
+        # 各図面番号について処理
+        for mesh_number in "${mesh_numbers[@]}"; do
+            local target_dir="${GIS_CHIKEI_SHAPE_DIR}/${shiten_dir}/${mesh_number}"
+            
+            if [ -d "$target_dir" ]; then
+                log_message "DEBUG" "図面番号 $mesh_number のディレクトリを削除します: $target_dir"
+                if rm -rf "$target_dir"; then
+                    log_message "DEBUG" "図面番号 $mesh_number のディレクトリを削除しました"
+                else
+                    log_message "ERROR" "図面番号 $mesh_number のディレクトリの削除に失敗しました"
+                    return 1
+                fi
+            fi
+        done
+    done
+
+    # ファイル圧縮用ワークディレクトリの削除
     if [ -d "$GIS_CHIKEI_TRANS_WORK_DIR" ]; then
         log_message "DEBUG" "ファイル圧縮用ワークディレクトリを削除: $GIS_CHIKEI_TRANS_WORK_DIR"
         if log_and_execute "rm -rf \"$GIS_CHIKEI_TRANS_WORK_DIR\""; then
-            log_message "DEBUG" "シェープファイルを削除しました"
+            log_message "DEBUG" "ワークディレクトリを削除しました"
         else
-            log_message "ERROR" "シェープファイルの削除に失敗しました"
+            log_message "ERROR" "ワークディレクトリの削除に失敗しました"
             return 1
         fi
     else
-        log_message "WARN" "削除するシェープファイルが見つかりません: $GIS_CHIKEI_TRANS_WORK_DIR"
+        log_message "WARN" "削除するワークディレクトリが見つかりません: $GIS_CHIKEI_TRANS_WORK_DIR"
     fi
+
     log_message "TRACE" "delete_shape_files() end"
+    return 0
 }
 
 # 転送済みファイルのバックアップ

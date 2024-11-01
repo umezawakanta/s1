@@ -62,6 +62,32 @@ log_message() {
     fi
 }
 
+# shape_tempフォルダをshapeフォルダにコピーする関数
+copy_shape_temp_to_shape() {
+    local source_dir="shape_temp"
+    local target_dir="shape"
+
+    log_message "INFO" "${source_dir}フォルダを${target_dir}フォルダにコピーします"
+
+    if [ ! -d "$source_dir" ]; then
+        log_message "ERROR" "ソースディレクトリが存在しません: $source_dir"
+        return 1
+    fi
+
+    if [ -d "$target_dir" ]; then
+        log_message "WARN" "ターゲットディレクトリが既に存在します。上書きします: $target_dir"
+        rm -rf "$target_dir"
+    fi
+
+    if cp -r "$source_dir" "$target_dir"; then
+        log_message "INFO" "コピーが完了しました: $source_dir -> $target_dir"
+        return 0
+    else
+        log_message "ERROR" "コピーに失敗しました: $source_dir -> $target_dir"
+        return 1
+    fi
+}
+
 # 設定ファイルの読み込み
 source config/batchenv_sjis.sh || {
     echo "エラー: batchenv_sjis.sh の読み込みに失敗しました"
@@ -112,6 +138,7 @@ log_message "DEBUG" "圧縮ファイル格納フォルダ: $COMPRESSED_FILE_DIR"
 # 転送指示結果ファイルの作成
 GIS_CHIKEI_TRANS_RESULT_FILE="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_RESULT_FILE"
 create_required_directories
+copy_shape_temp_to_shape
 log_message "INFO" "転送指示結果ファイルを作成します: $GIS_CHIKEI_TRANS_RESULT_FILE"
 
 # 転送用圧縮ファイル格納フォルダ内のファイルを検索

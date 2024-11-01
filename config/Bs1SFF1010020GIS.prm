@@ -47,13 +47,14 @@ GIS_CHIKEI_TRANS_COMP_FILE=$GIS_CHIKEI_TRANS_COMP_DIR/${FILE_PREFIX}$(date +%Y%m
 #=========================================
 # 転送指示情報ファイル、転送指示結果ファイル用設定
 #=========================================
-GIS_CHIKEI_DENSO_CARD=GIS_CHIKEI
+GIS_CHIKEI_DENSO_CARD=SS_CHIKEI_DENCO_CARD
 GIS_CHIKEI_GIS_COMP_DIR=/sq5nas/data/recv/SQ500ES011/
 
 #=========================================
 # 流量制限設定
 #=========================================
-GIS_CHIKEI_MESH_2010000=2000
+#GIS_CHIKEI_MESH_2010000=2000
+GIS_CHIKEI_MESH_2010000=2
 GIS_CHIKEI_MESH_2020000=2000
 GIS_CHIKEI_MESH_2030000=2000
 GIS_CHIKEI_MESH_2040000=2000
