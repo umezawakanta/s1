@@ -16,7 +16,7 @@ GYOMU_ROOT=.
 #=========================================
 LOG_DIR=log
 LOG_FILE=$LOG_DIR/process.log
-LOG_LEVEL=TRACE      # ログレベル（TRACE/DEBUG/INFO/WARN/ERROR）
+LOG_LEVEL=DEBUG      # ログレベル（TRACE/DEBUG/INFO/WARN/ERROR）
 LOG_MAX_SIZE=10M     # ログファイルの最大サイズ
 LOG_BACKUP_COUNT=5   # 保持する古いログファイルの数
 
@@ -49,6 +49,20 @@ GIS_CHIKEI_TRANS_COMP_FILE=$GIS_CHIKEI_TRANS_COMP_DIR/${FILE_PREFIX}$(date +%Y%m
 #=========================================
 GIS_CHIKEI_DENSO_CARD=GIS_CHIKEI
 GIS_CHIKEI_GIS_COMP_DIR=/sq5nas/data/recv/SQ500ES011/
+
+#=========================================
+# 流量制限設定
+#=========================================
+GIS_CHIKEI_MESH_2010000=2000
+GIS_CHIKEI_MESH_2020000=2000
+GIS_CHIKEI_MESH_2030000=2000
+GIS_CHIKEI_MESH_2040000=2000
+GIS_CHIKEI_MESH_2050000=2000
+GIS_CHIKEI_MESH_2060000=2000
+GIS_CHIKEI_MESH_2070000=2000
+GIS_CHIKEI_MESH_2080000=2000
+GIS_CHIKEI_MESH_2090000=2000
+GIS_CHIKEI_MESH_2140000=2000
 
 #=========================================
 # バックアップ設定

@@ -1,0 +1,30 @@
+#=========================================
+# スクリプトのパス
+#=========================================
+STARTER_SCRIPT=./fukusei.sh
+EXECUTOR_SCRIPT=sbin/fukusei.sh
+COMMON_DEF_SCRIPT=config/fukuseiCommon.sh
+
+#=========================================
+# 基本パス設定
+#=========================================
+#GYOMU_ROOT=/sxhome/filechg/GIS/CHIKEI
+GYOMU_ROOT=.
+
+#=========================================
+# ログ設定
+#=========================================
+LOG_DIR=log
+LOG_FILE=$LOG_DIR/fukusei.log
+LOG_LEVEL=INFO      # ログレベル（TRACE/DEBUG/INFO/WARN/ERROR）
+LOG_MAX_SIZE=10M     # ログファイルの最大サイズ
+LOG_BACKUP_COUNT=5   # 保持する古いログファイルの数
+
+#=========================================
+# ファイルパス設定
+#=========================================
+# ディレクトリパス
+FROM_DIR=PF
+TO_DIR=GIS
+TO_DIR2=STS
+
