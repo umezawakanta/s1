@@ -355,9 +355,9 @@ backup_transferred_file() {
 
     # 転送指示結果ファイルを1行ずつ処理
     while IFS=',' read -r registration_number card_name local_file remote_file status comment timestamp || [ -n "$remote_file" ]; do
-        # ステータスが転送済み（0）かチェック
-        if [ "$status" != "0" ]; then
-            log_message "INFO" "ファイルは転送済みではありません。スキップします: $remote_file"
+        # ステータスが連携済み（1）かチェック
+        if [ "$status" != "1" ]; then
+            log_message "INFO" "ファイルは連携済みではありません。スキップします: $remote_file"
             continue
         fi
 
@@ -369,9 +369,9 @@ backup_transferred_file() {
 
         # リモートファイルをバックアップディレクトリに移動
         if mv "$remote_file" "$backup_dir/"; then
-            log_message "DEBUG" "転送済みファイルをバックアップしました: $remote_file -> $backup_dir/"
+            log_message "DEBUG" "連携済みファイルをバックアップしました: $remote_file -> $backup_dir/"
         else
-            log_message "ERROR" "転送済みファイルのバックアップに失敗しました: $remote_file"
+            log_message "ERROR" "連携済みファイルのバックアップに失敗しました: $remote_file"
             return 1
         fi
     done < "$GIS_CHIKEI_TRANS_RESULT_FILE"
@@ -424,9 +424,9 @@ update_transfer_instruction_info() {
         # タイムスタンプの修正
         timestamp=$(echo "$timestamp" | cut -c 1-14)
         
-        # ステータスが「0：転送済み」以外かチェック
-        if [ "$status" != "0" ]; then
-            log_message "DEBUG" "ステータスが転送済み以外です。転送指示情報ファイルに追加します"
+        # ステータスが「1：連携済み」以外かチェック
+        if [ "$status" != "1" ]; then
+            log_message "DEBUG" "ステータスが連携済み以外です。転送指示情報ファイルに追加します"
             
             # 新しい行を作成
             # 転送指示情報ファイルのステータスは0固定
@@ -436,7 +436,7 @@ update_transfer_instruction_info() {
             echo "$new_line" >> "$GIS_CHIKEI_TRANS_INFO_FILE"
             log_message "DEBUG" "転送指示情報ファイルに追加しました: $remote_file"
         else
-            log_message "DEBUG" "ステータスが転送済みです。このファイルはスキップします: $remote_file"
+            log_message "DEBUG" "ステータスが連携済みです。このファイルはスキップします: $remote_file"
         fi
     done < "$GIS_CHIKEI_TRANS_RESULT_FILE"
 
@@ -487,8 +487,8 @@ update_transfer_instruction_info_after() {
     # リモートファイル名
     local remote_file="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_DIR/$file_name"
     
-    # ステータス（1固定）
-    local status="1"
+    # ステータス（0固定 0：未連携、1：連携済み）
+    local status="0"
     
     # コメント（chikei固定）
     local comment="chikei"
