@@ -86,379 +86,41 @@ create_dir_if_not_exists() {
     fi
 }
 
-# シェープファイル収集処理
-collect_shape_files() {
-    log_message "TRACE" "collect_shape_files() start"
-    log_message "DEBUG" "シェープファイルの収集を開始します"
+# ファイル複製
+copy_files() {
+    log_message "TRACE" "copy_files() start"
+    log_message "DEBUG" "ファイル複製を開始します"
     
-    local copy_success=false
+    log_message "INFO" "FROM_DIR: $FROM_DIR"
+    log_message "INFO" "TO_DIR: $TO_DIR"
+    log_message "INFO" "TO_DIR2: $TO_DIR2"
     
-    # 更新メッシュファイルリストを初期化
-    log_message "DEBUG" "更新メッシュファイルリストを初期化"
-    create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_MESH_FILE")"
-    log_and_execute ": > \"$GIS_CHIKEI_MESH_FILE\""
-    
-    # 支店番号ディレクトリを検索
-    local shiten_dirs=(2010000 2020000 2030000 2040000 2050000 2060000 2070000 2080000 2090000 2140000)
-    
-    for shiten_dir in "${shiten_dirs[@]}"; do
-        if [ ! -d "${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir" ]; then
-            log_message "WARN" "$shiten_dir ディレクトリが見つかりません: ${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir"
-            continue
-        fi
-        
-        log_message "DEBUG" "ディレクトリを検索 : ${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir"
-        log_message "DEBUG" "${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir の内容:"
-        log_and_execute "ls -R \"${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir\""
-        
-        # システムディレクトリを決定
-        local sys_dir
-        if [ "$shiten_dir" = "2080000" ] || [ "$shiten_dir" = "2090000" ]; then
-            sys_dir="sys08"
-        else
-            sys_dir="sys09"
-        fi
-        # 動的に変数名を生成し、その値を取得
-        local mesh_seigen_key="GIS_CHIKEI_MESH_${shiten_dir}"
-        local mesh_seigen_value="${!mesh_seigen_key}"
-        
-        log_message "INFO" "${mesh_seigen_key}: ${mesh_seigen_value}"
-
-        local processed_mesh_count=0
-
-        # 図面番号ディレクトリを検索
-        for mesh_dir in "${GIS_CHIKEI_SHAPE_DIR}/$shiten_dir"/*; do
-            if [ ! -d "$mesh_dir" ]; then
-                log_message "DEBUG" "スキップされたディレクトリ: $mesh_dir"
-                continue
-            fi
-            
-            local mesh_number=$(basename "$mesh_dir")
-            
-            # メッシュ番号から大メッシュ、中メッシュ、小メッシュを抽出
-            local large_mesh=${mesh_number:0:3}
-            local medium_mesh=${mesh_number:3:2}
-            local small_mesh=${mesh_number:5:2}
-            
-            local target_dir="${GIS_CHIKEI_TRANS_WORK_DIR}/${sys_dir}/${large_mesh}/${medium_mesh}/${small_mesh}"
-            log_message "DEBUG" "シェープファイルを複写します: $mesh_dir -> $target_dir"
-            
-            # ディレクトリ構造を作成
-            create_dir_if_not_exists "$target_dir"
-            
-            # findコマンドを構築
-            local find_command="find \"$mesh_dir\" -type f -regex \".*\.\(shp\|shx\|dbf\|prj\|fix\)$\" -exec cp {} \"$target_dir/\" \\;"
-            log_message "DEBUG" "find コマンドを実行: $find_command"
-            
-            # ファイルをコピー
-            if log_and_execute "$find_command"; then
-                log_message "DEBUG" "図面番号 ${mesh_number} のシェープファイルを正常に複写しました"
-                # 更新メッシュファイルリストに図面番号を追加
-                log_and_execute "echo \"${mesh_number}\" >> \"$GIS_CHIKEI_MESH_FILE\""
-                log_message "DEBUG" "更新メッシュファイルリストに追加: $mesh_number"
-                copy_success=true
-                
-                ((processed_mesh_count++))
-                log_message "DEBUG" "処理済みメッシュ数: $processed_mesh_count / $mesh_seigen_value"
-                if [ "$processed_mesh_count" -ge "$mesh_seigen_value" ]; then
-                    log_message "INFO" "支店 $shiten_dir の制限値 $mesh_seigen_value に達しました。次の支店に移ります。"
-                    break
-                fi                
-            else
-                log_message "ERROR" "図面番号 ${mesh_number} のシェープファイルの複写に失敗しました"
-                log_message "DEBUG" "失敗したディレクトリの内容:"
-                log_and_execute "ls -R \\"$mesh_dir\\""
-            fi
-        done
-    done
-    
-    # 更新メッシュファイルリストの確認
-    if [ -s "$GIS_CHIKEI_MESH_FILE" ]; then
-        log_message "DEBUG" "更新メッシュファイルリストを作成しました: $GIS_CHIKEI_MESH_FILE"
-    else
-        log_message "ERROR" "更新メッシュファイルリストが空です"
+    # FROM_DIRの存在確認
+    if ! check_dir_exists "$FROM_DIR"; then
+        log_message "ERROR" "コピー元ディレクトリが存在しません: $FROM_DIR"
         return 1
     fi
     
-    if [ "$copy_success" = false ]; then
-        log_message "ERROR" "シェープファイルの複写に失敗しました"
+    # TO_DIRとTO_DIR2の作成（存在しない場合）
+    create_dir_if_not_exists "$TO_DIR"
+    create_dir_if_not_exists "$TO_DIR2"
+    
+    # FROM_DIRの内容をTO_DIRにコピー
+    log_message "DEBUG" "FROM_DIRの内容をTO_DIRにコピーします"
+    if ! log_and_execute "cp -R \"$FROM_DIR\"/* \"$TO_DIR\"/"; then
+        log_message "ERROR" "TO_DIRへのコピーに失敗しました"
         return 1
     fi
     
-    log_message "DEBUG" "シェープファイルの収集が完了しました"
-    log_message "TRACE" "collect_shape_files() end"
-    return 0
-}
-
-# 更新メッシュファイルリスト作成
-create_update_mesh_list() {
-    log_message "DEBUG" "作成した更新メッシュリストから重複した図面番号を削除してソートする"
-    
-    if [ ! -f "$GIS_CHIKEI_MESH_FILE" ]; then
-        log_message "ERROR" "更新メッシュファイルリストが見つかりません: $GIS_CHIKEI_MESH_FILE"
+    # FROM_DIRの内容をTO_DIR2にコピー
+    log_message "DEBUG" "FROM_DIRの内容をTO_DIR2にコピーします"
+    if ! log_and_execute "cp -R \"$FROM_DIR\"/* \"$TO_DIR2\"/"; then
+        log_message "ERROR" "TO_DIR2へのコピーに失敗しました"
         return 1
     fi
     
-    # 一時ファイルを作成
-    local temp_file="${GIS_CHIKEI_MESH_FILE}.tmp"
-    
-    # ファイルをソートし、重複を削除
-    if sort -u "$GIS_CHIKEI_MESH_FILE" > "$temp_file"; then
-        log_message "DEBUG" "更新メッシュファイルリストをソートし、重複を削除しました"
-        
-        # 元のファイルを一時ファイルで置き換え
-        if mv "$temp_file" "$GIS_CHIKEI_MESH_FILE"; then
-            log_message "DEBUG" "更新メッシュファイルリストを更新しました: $GIS_CHIKEI_MESH_FILE"
-            
-            # 処理結果の確認
-            local line_count=$(wc -l < "$GIS_CHIKEI_MESH_FILE")
-            log_message "DEBUG" "更新メッシュファイルリストの行数: $line_count"
-            
-            if [ "$line_count" -gt 0 ]; then
-                log_message "DEBUG" "更新メッシュファイルリストの内容:"
-                log_and_execute "cat \"$GIS_CHIKEI_MESH_FILE\""
-                return 0
-            else
-                log_message "ERROR" "更新メッシュファイルリストが空です"
-                return 1
-            fi
-        else
-            log_message "ERROR" "更新メッシュファイルリストの更新に失敗しました"
-            rm -f "$temp_file"
-            return 1
-        fi
-    else
-        log_message "ERROR" "更新メッシュファイルリストの処理に失敗しました"
-        rm -f "$temp_file"
-        return 1
-    fi
-}
-
-# 転送用圧縮ファイルの作成
-create_transfer_compressed_file() {
-    log_message "TRACE" "create_transfer_compressed_file() start"
-    log_message "DEBUG" "転送用圧縮ファイルを作成中"
-    create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_COMP_FILE")"
-    
-    # 現在のディレクトリを保存
-    local current_dir=$(pwd)
-        
-    # WORK_DIRに移動してtar作成
-    cd "$GIS_CHIKEI_TRANS_WORK_DIR" || return 1
-    log_message "TRACE" "create_transfer_compressed_file() end"    
-    if log_and_execute "tar -czf \"$GIS_CHIKEI_TRANS_COMP_FILE\" *"; then
-        log_message "DEBUG" "転送用圧縮ファイルを作成しました: $GIS_CHIKEI_TRANS_COMP_FILE"
-        cd "$current_dir" || return 1
-        return 0
-    else
-        log_message "ERROR" "転送用圧縮ファイルの作成に失敗しました"
-        rm -f "$(basename "$GIS_CHIKEI_MESH_FILE")"  # コピーしたメッシュリストを削除
-        cd "$current_dir" || return 1
-        return 1
-    fi
-}
-
-# シェープファイル削除
-delete_shape_files() {
-    log_message "TRACE" "delete_shape_files() start"
-    log_message "DEBUG" "シェープファイルを削除中"
-    if [ -d "$GIS_CHIKEI_TRANS_WORK_DIR" ]; then
-        log_message "DEBUG" "ファイル圧縮用ワークディレクトリを削除: $GIS_CHIKEI_TRANS_WORK_DIR"
-        if log_and_execute "rm -rf \"$GIS_CHIKEI_TRANS_WORK_DIR\""; then
-            log_message "DEBUG" "シェープファイルを削除しました"
-        else
-            log_message "ERROR" "シェープファイルの削除に失敗しました"
-            return 1
-        fi
-    else
-        log_message "WARN" "削除するシェープファイルが見つかりません: $GIS_CHIKEI_TRANS_WORK_DIR"
-    fi
-    log_message "TRACE" "delete_shape_files() end"
-}
-
-# 転送済みファイルのバックアップ
-backup_transferred_file() {
-    log_message "TRACE" "backup_transferred_file() start"
-    log_message "DEBUG" "転送済みファイルのバックアップを開始します"
-    
-    # 転送指示結果ファイルの存在確認
-    if [ ! -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
-        log_message "ERROR" "転送指示結果ファイルが見つかりません: $GIS_CHIKEI_TRANS_RESULT_FILE"
-        return 1
-    fi
-
-    # バックアップディレクトリの作成
-    local backup_dir="${GIS_CHIKEI_TRANS_BACK_DIR}"
-    create_dir_if_not_exists "$backup_dir"
-
-    # 転送指示結果ファイルのバックアップ名を生成（日付サフィックス付き）
-    local current_date=$(date +%Y%m%d%H%M%S)
-    local result_backup_name="${GIS_CHIKEI_TRANS_FILE_NAME}_${current_date}"
-    
-    # 転送指示結果ファイルをバックアップ
-    if cp "$GIS_CHIKEI_TRANS_RESULT_FILE" "$backup_dir/$result_backup_name"; then
-        log_message "DEBUG" "転送指示結果ファイルをバックアップしました: $backup_dir/$result_backup_name"
-    else
-        log_message "ERROR" "転送指示結果ファイルのバックアップに失敗しました"
-        return 1
-    fi
-
-    # 転送指示結果ファイルを1行ずつ処理
-    while IFS=',' read -r registration_number card_name local_file remote_file status comment timestamp || [ -n "$remote_file" ]; do
-        # ステータスが転送済み（0）かチェック
-        if [ "$status" != "0" ]; then
-            log_message "INFO" "ファイルは転送済みではありません。スキップします: $remote_file"
-            continue
-        fi
-
-        # リモートファイルの存在確認
-        if [ ! -f "$remote_file" ]; then
-            log_message "WARN" "バックアップ対象のファイルが見つかりません: $remote_file"
-            continue
-        fi
-
-        # リモートファイルをバックアップディレクトリに移動
-        if mv "$remote_file" "$backup_dir/"; then
-            log_message "DEBUG" "転送済みファイルをバックアップしました: $remote_file -> $backup_dir/"
-        else
-            log_message "ERROR" "転送済みファイルのバックアップに失敗しました: $remote_file"
-            return 1
-        fi
-    done < "$GIS_CHIKEI_TRANS_RESULT_FILE"
-
-    # 3世代より古いバックアップの削除
-    # 圧縮ファイルのバックアップ
-    local tar_backup_files=("$GIS_CHIKEI_TRANS_BACK_DIR"/*.tar.gz)
-    if [ ${#tar_backup_files[@]} -gt $GIS_CHIKEI_COMP_BAK_SEDAI ]; then
-        IFS=$'\n' sorted_tar_files=($(ls -t "${tar_backup_files[@]}"))
-        for old_file in "${sorted_tar_files[@]:$GIS_CHIKEI_COMP_BAK_SEDAI}"; do
-            rm "$old_file"
-            log_message "DEBUG" "古い圧縮ファイルバックアップを削除しました: $old_file"
-        done
-    fi
-
-    # 転送指示結果ファイルのバックアップ
-    local result_backup_files=("$GIS_CHIKEI_TRANS_BACK_DIR"/${GIS_CHIKEI_TRANS_FILE_NAME}_*)
-    if [ ${#result_backup_files[@]} -gt $GIS_CHIKEI_COMP_BAK_SEDAI ]; then
-        IFS=$'\n' sorted_result_files=($(ls -t "${result_backup_files[@]}"))
-        for old_file in "${sorted_result_files[@]:$GIS_CHIKEI_COMP_BAK_SEDAI}"; do
-            rm "$old_file"
-            log_message "DEBUG" "古い転送指示結果ファイルバックアップを削除しました: $old_file"
-        done
-    fi
-
-    log_message "DEBUG" "バックアップを3世代まで保持しました"
-    log_message "DEBUG" "転送済みファイルのバックアップが完了しました"
-    log_message "TRACE" "backup_transferred_file() end"
-    return 0
-}
-
-# 転送指示情報の更新
-update_transfer_instruction_info() {
-    log_message "TRACE" "update_transfer_instruction_info() start"
-    log_message "DEBUG" "転送指示情報の更新処理を開始します"
-
-    if [ ! -f "$GIS_CHIKEI_TRANS_RESULT_FILE" ]; then
-        log_message "ERROR" "転送指示結果ファイルが見つかりません: $GIS_CHIKEI_TRANS_RESULT_FILE"
-        return 1
-    fi
-
-    log_message "DEBUG" "転送指示結果ファイルの内容:"
-    log_and_execute "cat \"$GIS_CHIKEI_TRANS_RESULT_FILE\""
-
-    # 転送指示情報ファイルを初期化
-    > "$GIS_CHIKEI_TRANS_INFO_FILE"
-
-    # 転送指示結果ファイルを1行ずつ処理
-    while IFS=',' read -r registration_number card_name local_file remote_file status comment timestamp || [ -n "$remote_file" ]; do
-        # タイムスタンプの修正
-        timestamp=$(echo "$timestamp" | cut -c 1-14)
-        
-        # ステータスが「0：転送済み」以外かチェック
-        if [ "$status" != "0" ]; then
-            log_message "DEBUG" "ステータスが転送済み以外です。転送指示情報ファイルに追加します"
-            
-            # 新しい行を作成
-            # 転送指示情報ファイルのステータスは0固定
-            local new_line="$registration_number,$card_name,$local_file,$remote_file,0,$comment,$timestamp"
-            
-            # 転送指示情報ファイルに追加
-            echo "$new_line" >> "$GIS_CHIKEI_TRANS_INFO_FILE"
-            log_message "DEBUG" "転送指示情報ファイルに追加しました: $remote_file"
-        else
-            log_message "DEBUG" "ステータスが転送済みです。このファイルはスキップします: $remote_file"
-        fi
-    done < "$GIS_CHIKEI_TRANS_RESULT_FILE"
-
-    if [ -s "$GIS_CHIKEI_TRANS_INFO_FILE" ]; then
-        log_message "DEBUG" "転送指示情報ファイルが更新されました: $GIS_CHIKEI_TRANS_INFO_FILE"
-    else
-        log_message "DEBUG" "転送指示情報ファイルの更新はありませんでした"
-    fi
-
-    log_message "DEBUG" "転送指示情報の更新処理が完了しました"
-    log_message "TRACE" "update_transfer_instruction_info() end"
-}
-
-# 転送指示情報の更新
-update_transfer_instruction_info_after() {
-    log_message "TRACE" "update_transfer_instruction_info_after() start"
-    log_message "DEBUG" "転送指示情報の更新処理を開始します"
-
-    # 転送用圧縮ファイルの存在確認
-    if [ ! -f "$GIS_CHIKEI_TRANS_COMP_FILE" ]; then
-        log_message "ERROR" "転送用圧縮ファイルが見つかりません: $GIS_CHIKEI_TRANS_COMP_FILE"
-        return 1
-    fi
-
-    # 転送用圧縮ファイル名から情報を抽出
-    local file_name=$(basename "$GIS_CHIKEI_TRANS_COMP_FILE")
-    local timestamp=$(date -r "$GIS_CHIKEI_TRANS_COMP_FILE" +%Y%m%d%H%M%S)
-    
-    log_message "DEBUG" "ファイル名: $file_name"
-    log_message "DEBUG" "タイムスタンプ: $timestamp"
-
-    # 転送指示情報ファイルのディレクトリを作成
-    create_dir_if_not_exists "$(dirname "$GIS_CHIKEI_TRANS_INFO_FILE")"
-
-    # 登録番号を計算（ファイル内の現在のレコード数 + 1）
-    local registration_number=1
-    if [ -f "$GIS_CHIKEI_TRANS_INFO_FILE" ]; then
-        registration_number=$(wc -l < "$GIS_CHIKEI_TRANS_INFO_FILE")
-        ((registration_number++))
-    fi
-    
-    # 伝送カード名
-    local card_name=$GIS_CHIKEI_DENSO_CARD
-    
-    # ローカルファイル名
-    local local_file="$GIS_CHIKEI_GIS_COMP_DIR$file_name"
-    
-    # リモートファイル名
-    local remote_file="$GYOMU_ROOT/$GIS_CHIKEI_TRANS_COMP_DIR/$file_name"
-    
-    # ステータス（1固定）
-    local status="1"
-    
-    # コメント（chikei固定）
-    local comment="chikei"
-
-    # 新しい行を作成（フォーマット: 登録番号,伝送カード名,ローカルファイル名,リモートファイル名,ステータス,コメント,タイムスタンプ）
-    local new_line="$registration_number,$card_name,$local_file,$remote_file,$status,$comment,$timestamp"
-    
-    # 転送指示情報ファイルに追加
-    echo "$new_line" >> "$GIS_CHIKEI_TRANS_INFO_FILE"
-    
-    if [ $? -eq 0 ]; then
-        log_message "DEBUG" "転送指示情報ファイルを更新しました: $GIS_CHIKEI_TRANS_INFO_FILE"
-        log_message "DEBUG" "追加したレコード: $new_line"
-    else
-        log_message "ERROR" "転送指示情報ファイルの更新に失敗しました"
-        return 1
-    fi
-
-    log_message "DEBUG" "転送指示情報の更新処理が完了しました"
-    log_message "TRACE" "update_transfer_instruction_info_after() end"
+    log_message "INFO" "ファイル複製が完了しました"
+    log_message "TRACE" "copy_files() end"
     return 0
 }
 
@@ -493,7 +155,7 @@ main() {
 
     log_message "TRACE" "（3）バッチ処理共通定義の読み込み"
     # バッチ処理共通定義ファイルのパスを設定
-    ${GYOMU_ROOT}/config/Bs1SFF1010020CommonDef.sh
+    ${GYOMU_ROOT}/$COMMON_DEF_SCRIPT
 
     log_message "TRACE" "（4）環境情報ファイルの存在チェック"
     if [ ! -f "$SHELL_PRM_FILE_PATH" ]; then
@@ -535,7 +197,7 @@ main() {
     log_message "INFO" "$JOB_NAME を開始します。"
 
     log_message "TRACE" "（8）複製処理"
-    delete_shape_files || log_message "ERROR" "シェープファイルの削除に失敗しました"
+    copy_files || log_message "ERROR" "複製に失敗しました"
 
     log_message "TRACE" "（9）終了処理"
     log_message "TRACE" "main() end"

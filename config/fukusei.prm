@@ -16,7 +16,7 @@ GYOMU_ROOT=.
 #=========================================
 LOG_DIR=log
 LOG_FILE=$LOG_DIR/fukusei.log
-LOG_LEVEL=INFO      # ログレベル（TRACE/DEBUG/INFO/WARN/ERROR）
+LOG_LEVEL=DEBUG      # ログレベル（TRACE/DEBUG/INFO/WARN/ERROR）
 LOG_MAX_SIZE=10M     # ログファイルの最大サイズ
 LOG_BACKUP_COUNT=5   # 保持する古いログファイルの数
 
